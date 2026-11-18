@@ -1,0 +1,46 @@
+{
+  "title": "Lofi Bedroom",
+  "doors": {
+    "door": {
+      "href": "",
+      "label": "Door"
+    }
+  },
+  "playlist": [],
+  "posters": {},
+  "girl": {
+    "show": true,
+    "smoking": true,
+    "hair": "#7b3fd8",
+    "eyes": "#90b0ea",
+    "skin": "#c9b4c8",
+    "sweater": "#1f1c28",
+    "lips": "#2a1426"
+  },
+  "cat": {
+    "show": true,
+    "color": "#17151d",
+    "eyes": "#ffd23a"
+  },
+  "neon": {
+    "show": true,
+    "text": "lofi",
+    "color": "#ff4fb0",
+    "moon": true,
+    "moonColor": "#6fb8ff",
+    "brightness": 1
+  },
+  "colors": {
+    "walls": "#5e5678",
+    "floor": "#7a5840",
+    "ceiling": "#4a4262"
+  },
+  "talk": [
+    "oh. hey. didn't hear you come in",
+    "it's been raining all night",
+    "don't mind the mess, i'll clean tomorrow. probably"
+  ],
+  "city": {
+    "seed": 4242
+  }
+}

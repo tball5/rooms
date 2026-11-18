@@ -1,0 +1,40 @@
+{
+  "title": "Live Concert",
+  "band": "THE STUMPS",
+  "doors": {
+    "door": {
+      "href": "",
+      "label": "Exit"
+    }
+  },
+  "playlist": [],
+  "posters": {},
+  "guitarist": {
+    "show": true,
+    "hair": "#b09460",
+    "skin": "#dcbba6",
+    "eyes": "#86b8c2",
+    "flannel": "#8c3242",
+    "beanie": "#2f5a35",
+    "jeans": "#3e4c6a",
+    "guitar": "#b5121b"
+  },
+  "bassist": {
+    "show": true,
+    "skin": "#e3b896",
+    "hair": "#4a3222",
+    "beard": "#5a3a24",
+    "shirt": "#2a2a31",
+    "pants": "#4e5a66",
+    "cap": "#b8352a",
+    "bass": "#25222c"
+  },
+  "drummer": {
+    "show": true,
+    "skin": "#e6c2a6",
+    "hair": "#f1d35a",
+    "shirt": "#141217",
+    "pants": "#2c2c33",
+    "gauges": "#0e0e10"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "title": "DJ Set",
+  "venue": "AFTERGLOW",
+  "djName": "DJ VIOLET",
+  "doors": {
+    "door": {
+      "href": "",
+      "label": "Way out"
+    }
+  },
+  "playlist": [],
+  "posters": {},
+  "dj": {
+    "show": true,
+    "hair": "#7b3fd8",
+    "eyes": "#90b0ea",
+    "skin": "#c9b4c8",
+    "hoodie": "#1d1b24",
+    "pants": "#16141b",
+    "shoes": "#e9e5ef"
+  },
+  "bartender": {
+    "show": true,
+    "shirt": "#141418",
+    "skin": "#d29b74",
+    "hair": "#2a1a14"
+  },
+  "bouncer": {
+    "show": true,
+    "shirt": "#0e0e10",
+    "skin": "#8a5a3c"
+  },
+  "talk": []
+}
