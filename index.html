@@ -10,8 +10,8 @@
 <link rel="icon" href="showcase/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="showcase/apple-touch-icon.png">
 <meta name="theme-color" content="#0d0d0e">
-<meta property="og:image" content="showcase/previews/live-concert.jpg">
-<meta name="theme-color" content="#000000">
+<meta property="og:image" content="showcase/previews/share.jpg">   <!-- TODO: make this the full https:// address once the site has its domain -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>   <!-- the 3D engine the rooms load -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -26,13 +26,15 @@
       <svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.4v9.2L12 21.5 3.5 16.6V7.4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 7.4 12 12.3l8.5-4.9M12 12.3v9.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
       <span>Shaden Tech</span>
     </a>
-    <nav class="nav" aria-label="Main">
+    <!-- the sections; on phones they sit behind the three-dot button -->
+    <button class="menu-btn" id="menuBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="nav"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></button>
+    <nav class="nav" id="nav" aria-label="Main">
       <a href="#rooms">Rooms</a>
-      <a href="#views">Views</a>
-      <a href="#builds" data-builds-link hidden>Builds</a>
+      <a href="#included">Features</a>
+      <a href="#how">Process</a>
       <a href="#faq">FAQs</a>
+      <a href="#contact">Contact</a>
     </nav>
-    <a class="btn btn-primary btn-small" href="#contact">Request a room</a>
   </div>
 </header>
 
@@ -41,17 +43,13 @@
   <section class="hero">
     <div class="hero-copy">
       <h1>Rooms you can walk into<span>for bands, brands and artists.</span></h1>
-      <p class="lede">Drop your next release inside a world your fans can walk into. Your songs on the speakers, your band on the stage, your art on the walls. One link, any device.</p>
-      <div class="hero-actions">
-        <a class="btn btn-primary" href="#contact">Request a room</a>
-        <a class="btn btn-secondary" href="#viewer-top">Try a demo</a>
-      </div>
+      <p class="lede">Drop your next release inside a world your fans can walk into, on their phone or their laptop. Your songs on the speakers, your band on the stage, your art on the walls. One link, no app. <a class="lede-link" href="#viewer-top">Try one below ↓</a></p>
     </div>
 
     <div class="viewer-wrap" id="viewer-top">
       <div class="viewer-head">
         <div class="tabs" role="tablist" aria-label="Choose a room"></div>
-        <p class="hint" id="hint">WASD to walk · drag to look · H to switch views · drop an MP3 to hear your music</p>
+        <div class="switch" id="viewSwitch" role="radiogroup" aria-label="View"></div>
       </div>
       <div class="viewer" id="viewer">
         <div class="poster" id="poster">
@@ -67,10 +65,29 @@
         </div>
         <div class="loading" id="loading" hidden><span class="spinner"></span><span>Loading room</span></div>
       </div>
+      <!-- under the window: the room's player and buttons (the room itself stays clean), then the links -->
+      <div class="deck" id="deck">
+        <div class="deck-player" aria-label="Music">
+          <button class="ctl" id="dPrev" type="button" aria-label="Previous song" disabled><svg viewBox="0 0 24 24"><path class="solid" d="M17 6.5v11a.7.7 0 0 1-1.1.6L9 12.6a.7.7 0 0 1 0-1.2l6.9-5.5a.7.7 0 0 1 1.1.6Z"/><path d="M7 6v12"/></svg></button>
+          <button class="ctl play" id="dPlay" type="button" aria-label="Play music" aria-pressed="false"><svg viewBox="0 0 24 24"><path class="play solid" d="M8 6.2v11.6a.8.8 0 0 0 1.2.7l9.2-5.8a.8.8 0 0 0 0-1.4L9.2 5.5A.8.8 0 0 0 8 6.2Z"/><g class="bars"><rect class="solid" x="7" y="6" width="3.2" height="12" rx="1"/><rect class="solid" x="13.8" y="6" width="3.2" height="12" rx="1"/></g></svg></button>
+          <button class="ctl" id="dNext" type="button" aria-label="Next song" disabled><svg viewBox="0 0 24 24"><path class="solid" d="M7 6.5v11a.7.7 0 0 0 1.1.6l6.9-5.5a.7.7 0 0 0 0-1.2L8.1 5.9A.7.7 0 0 0 7 6.5Z"/><path d="M17 6v12"/></svg></button>
+          <span class="deck-song" id="dSong">Enter the room to play music</span>
+          <label class="ctl" id="dAddLabel" for="dAdd" title="Add your own songs (MP3s)" aria-label="Add songs"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></label>
+          <input type="file" id="dAdd" accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac" multiple hidden>
+          <button class="ctl" id="dRemove" type="button" aria-label="Remove this song" title="Remove this song" hidden><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
+        </div>
+        <div class="deck-side">
+          <div class="deck-extras" id="dExtras"></div>
+          <input type="range" class="deck-volume" id="dVolume" min="0" max="1" step="0.01" value="0.8" aria-label="Music volume" title="Music volume" disabled>
+        </div>
+      </div>
       <div class="viewer-bar">
-        <button class="link" id="exit" type="button" hidden>Leave room</button>
-        <button class="link" id="full" type="button">Fullscreen</button>
-        <a class="link" id="ownPage" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+        <p class="hint" id="hint"></p>
+        <span class="viewer-links">
+          <button class="link" id="exit" type="button" hidden>Leave room</button>
+          <button class="link" id="full" type="button">Fullscreen</button>
+          <a class="link" id="ownPage" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+        </span>
       </div>
       <!-- phones: the room's description and how to use it sit here, under the window, so the room itself stays clean -->
       <div class="viewer-notes" id="viewerNotes">
@@ -90,43 +107,35 @@
     <div class="cards" id="cards"></div>
   </section>
 
-  <!-- ============ the three views ============ -->
-  <section class="section" id="views">
-    <div class="section-head">
-      <p class="eyebrow">Views</p>
-      <h2>One room<span>three ways to see it.</span></h2>
-      <p class="section-lede">Press <kbd>H</kbd> in any room. A scan wave rolls out from where you stand and turns the world over.</p>
-    </div>
-    <div class="views">
-      <figure class="view">
-        <img src="showcase/previews/live-concert.jpg" alt="Live Concert in its own view: the stage lit up over a packed crowd" loading="lazy">
-        <figcaption><b>Concert</b><span>Each room's own look, painted: warm, flat-shaded, lived in.</span></figcaption>
-      </figure>
-      <figure class="view">
-        <img src="showcase/previews/live-concert-mix.jpg" alt="Live Concert in the Mix view: the crowd as skeletons under a sky of falling code" loading="lazy">
-        <figcaption><b>Mix</b><span>The world outside turns. The crowd goes skeleton and the sky rains code, while the band plays on.</span></figcaption>
-      </figure>
-      <figure class="view">
-        <img src="showcase/previews/live-concert-code.jpg" alt="Live Concert in the Code view: the whole scene drawn as a blue hologram" loading="lazy">
-        <figcaption><b>Code</b><span>Everything is code: a hologram of the whole place, still walkable.</span></figcaption>
-      </figure>
-    </div>
-  </section>
-
   <!-- ============ what you get ============ -->
   <section class="section" id="included">
     <div class="section-head">
-      <p class="eyebrow">Features</p>
+      <p class="eyebrow">What you get</p>
       <h2>Your world<span>not a template with your logo on it.</span></h2>
       <p class="section-lede">No prompts, no code, no debugging. You send your music and art. We hand you a finished world.</p>
     </div>
     <div class="grid">
-      <article class="feature"><span class="num">01</span><h3>Your music, live in the room</h3><p>Your tracks on the room's player, with titles and cover art. Lights, screens and the band move with the sound. Try it now: drop an MP3 onto any demo room.</p></article>
+      <article class="feature"><span class="num">01</span><h3>Your music, live in the room</h3><p>Your tracks on the room's player, with titles and cover art. Lights, screens and the crowd move with the beat. Try it: <span class="desk">drop an MP3 onto a demo room.</span><span class="touch">tap + under a demo room.</span></p></article>
       <article class="feature"><span class="num">02</span><h3>Your people</h3><p>Band members, artists and characters styled after you: hair, clothes, instruments, colours.</p></article>
       <article class="feature"><span class="num">03</span><h3>Your art on the walls</h3><p>Posters, flyers, merch, stage screens and signs carry your name and artwork.</p></article>
       <article class="feature"><span class="num">04</span><h3>Doors that go somewhere</h3><p>Click a door and land on your store, tickets, socials or your next room.</p></article>
-      <article class="feature"><span class="num">05</span><h3>Three views built in</h3><p>The room's own look, Mix and Code come with every room, one key away.</p></article>
-      <article class="feature"><span class="num">06</span><h3>One link, anywhere</h3><p>No app and no install. Desktop and phones, as its own page or embedded on your site.</p></article>
+      <article class="feature"><span class="num">05</span><h3>Made for phones too</h3><p>Walk with your thumbs on a phone or the keys on a laptop. The same room, everywhere.</p></article>
+      <article class="feature"><span class="num">06</span><h3>One link, anywhere</h3><p>No app and no install. As its own page, or embedded on your site.</p></article>
+    </div>
+    <div class="views-one" id="views">
+      <div class="views-copy">
+        <h3 class="sub">Three views in every room</h3>
+        <p class="sub-lede"><span class="desk">Press <kbd>H</kbd> in any room</span><span class="touch">Tap the switch above any room</span> and a scan wave rolls out from where you stand and turns the world over.</p>
+        <ol class="view-list">
+          <li><span class="num">01</span><b>The room</b><span>Each room's own look, painted: warm, flat-shaded, lived in.</span></li>
+          <li><span class="num">02</span><b>Mix</b><span>Somewhere in between. <span class="desk">Press H once</span><span class="touch">Switch to it</span> and see what happens to the crowd.</span></li>
+          <li class="on"><span class="num">03</span><b>Code</b><span>Everything is code: a hologram of the whole place, still walkable.</span></li>
+        </ol>
+      </div>
+      <figure class="view-shot">
+        <img src="showcase/previews/live-concert-code.webp" alt="Live Concert in the Code view: the whole scene drawn as a blue hologram" loading="lazy" width="1600" height="900">
+        <figcaption>Live Concert, Code view</figcaption>
+      </figure>
     </div>
   </section>
 
@@ -142,21 +151,16 @@
       <li><span class="num">Step 3</span><h3>We build it with you</h3><p>You walk through drafts and tell us what to move, change or add. We tune it until it feels right.</p></li>
       <li><span class="num">Step 4</span><h3>Launch</h3><p>Share the link, put it on your site, drop it with a release.</p></li>
     </ol>
-  </section>
-
-  <!-- ============ built by Shaden (filled from BUILDS in showcase/site.js; hidden while empty) ============ -->
-  <section class="section" id="builds" hidden>
-    <div class="section-head">
-      <p class="eyebrow">Built by Shaden</p>
-      <h2>Rooms, games<span>and whole worlds.</span></h2>
-      <p class="section-lede">The same studio builds arcade games, temples and a whole city. These rooms are where we start, not where we stop.</p>
+    <div class="embed">
+      <div class="embed-copy">
+        <h3>On your own site, with one line</h3>
+        <p>Paste it into your site or link-in-bio page and the room plays right there. Fullscreen and sound included.</p>
+      </div>
+      <div class="embed-code">
+        <code id="embedLine">&lt;iframe src="https://shaden.technology/your-room/" allow="fullscreen; autoplay" style="width:100%;aspect-ratio:16/9;border:0"&gt;&lt;/iframe&gt;</code>
+        <button class="link" id="embedCopy" type="button">Copy</button>
+      </div>
     </div>
-    <div class="builds" id="buildCards"></div>
-    <a class="nexus" id="nexus" href="#" target="_blank" rel="noopener" hidden>
-      <span class="nexus-kicker">A whole city</span>
-      <span class="nexus-name">Walk through the Nexus</span>
-      <span class="nexus-go">Enter the city ↗</span>
-    </a>
   </section>
 
   <!-- ============ pricing ============ -->
@@ -231,21 +235,17 @@
   <section class="section contact" id="contact">
     <div class="contact-copy">
       <p class="eyebrow">Contact</p>
-      <h2>Let's build your room<span>Tell us about your world. We'll reply with ideas and a quote.</span></h2>
+      <h2>Let's build your room<span>or a whole world of them.</span></h2>
+      <p class="section-lede">Tell us about your world. We'll reply with ideas and a quote.</p>
       <p class="direct" id="contactDirect"></p>
     </div>
     <form class="form" id="form" novalidate>
       <label>Name<input name="name" autocomplete="name" required></label>
-      <label>Email<input name="email" type="email" autocomplete="email" required></label>
       <label>Band, brand or artist<input name="project"></label>
+      <label class="wide">Email<input name="email" type="email" autocomplete="email" required></label>
       <label>Starting point
         <select name="room">
           <option>Lofi Bedroom</option><option>The Basement</option><option>DJ Set</option><option>Live Concert</option><option selected>Something new</option>
-        </select>
-      </label>
-      <label>Budget
-        <select name="budget">
-          <option>Artist Room ($2,600+)</option><option>Artist World ($7,500+)</option><option>Custom World ($15,000+)</option><option selected>Not sure yet</option>
         </select>
       </label>
       <label><span>Release date <em>optional</em></span><input name="release" type="date"></label>
@@ -264,9 +264,10 @@
     <div class="foot-brand">
       <a class="brand" href="#"><svg class="mark" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5 20.5 7.4v9.2L12 21.5 3.5 16.6V7.4z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 7.4 12 12.3l8.5-4.9M12 12.3v9.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><span>Shaden Tech</span></a>
       <p>Walk-around 3D rooms for music.</p>
+      <p class="foot-also">Rooms are where we start. <a href="https://shaden.technology/nexus" target="_blank" rel="noopener">Walk through the Nexus, a whole city ↗</a></p>
     </div>
     <div class="foot-col"><p>Rooms</p><a href="rooms/lofi-bedroom/" target="_blank" rel="noopener">Lofi Bedroom</a><a href="rooms/the-basement/" target="_blank" rel="noopener">The Basement</a><a href="rooms/dj-set/" target="_blank" rel="noopener">DJ Set</a><a href="rooms/live-concert/" target="_blank" rel="noopener">Live Concert</a></div>
-    <div class="foot-col"><p>Company</p><a href="#builds" data-builds-link hidden>Games &amp; builds</a><a href="#faq">FAQs</a><a href="#contact">Contact</a></div>
+    <div class="foot-col"><p>Company</p><a href="#faq">FAQs</a><a href="#contact">Contact</a></div>
   </div>
   <p class="copy">© <span id="year">2026</span> Shaden Technology. All rights reserved. The rooms, characters, code and artwork on this site belong to Shaden Technology and may not be copied or reused without permission.</p>
 </footer>

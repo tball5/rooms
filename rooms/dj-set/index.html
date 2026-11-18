@@ -384,6 +384,12 @@ header {
   .corner { gap: 10px; }
   .stick { left: calc(18px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 }
+/* Inside the Shaden showcase page: the page around the room has the player, the view switch and the tips,
+   so the room shows none of its own controls; messages sit at the bottom. (Fullscreen brings the controls back.) */
+html.embedded .logo, html.embedded .player, html.embedded .corner, html.embedded #pausedChip { display: none !important; }
+html.embedded:not(.modes-inside) .modes { display: none !important; }   /* on phones the page shows it above the window */
+html.embedded #toast { top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+html.embedded .prompt { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 @media (prefers-reduced-motion: reduce) {
   .loader-dot { animation: none; }
 }
@@ -1346,6 +1352,93 @@ async function readTags(blob) {
   return out;
 }
 
+
+// ---- tempo: songs people add get their beat found (how fast, and where the beats land), so heads, dancers
+//      and lights move in time with each song instead of a fixed clock. It runs once per song, in the background,
+//      on a low-quality copy of the first two and a half minutes; until it knows, the room keeps its own steady beat.
+const tempo = {
+  found: new Map(),                       // song address -> { bpm, offset } (null while working, or if it can't tell)
+  of(track) {
+    if (!track || track.builtin || !track.src) return null;
+    if (!this.found.has(track.src)) {
+      this.found.set(track.src, null);
+      this.find(track.src).then(r => this.found.set(track.src, r)).catch(() => {});
+    }
+    return this.found.get(track.src);
+  },
+  // beats counted from the start of the song at this playback time, or null until the tempo is known
+  beats(track, time) {
+    const f = this.of(track);
+    return f ? (time - f.offset) * f.bpm / 60 : null;
+  },
+  async find(src) {
+    // works in short slices so the room keeps drawing smoothly while it listens
+    let since = performance.now();
+    const breathe = async () => { if (performance.now() - since > 8) { await new Promise(r => setTimeout(r, 0)); since = performance.now(); } };
+    const RATE = 22050, HOP = 256, FPS = RATE / HOP;
+    const data = await (await fetch(src)).arrayBuffer();
+    const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const audio = await new Promise((resolve, reject) => {
+      const p = new Offline(1, RATE, RATE).decodeAudioData(data, resolve, reject);
+      if (p && p.catch) p.catch(reject);
+    });
+    const n = Math.min(audio.length, RATE * 150), chans = audio.numberOfChannels;
+    const a = audio.getChannelData(0), b = chans > 1 ? audio.getChannelData(1) : a;
+    // onsets: how sharply the low end (kicks) and the top end (snares, hats) jump, frame by frame
+    const frames = Math.floor(n / HOP), onset = new Float32Array(frames);
+    let lp = 0, prevX = 0, prevLow = 0, prevHigh = 0;
+    for (let f = 0; f < frames; f++) {
+      if (f % 512 === 0) await breathe();
+      let low = 0, high = 0;
+      for (let i = f * HOP, end = i + HOP; i < end; i++) {
+        const x = (a[i] + b[i]) * 0.5;
+        lp += (x - lp) * 0.04;                            // ~150 Hz low-pass
+        const hp = x - prevX; prevX = x;
+        low += lp * lp; high += hp * hp;
+      }
+      low = Math.log1p(low * 400); high = Math.log1p(high * 100);
+      onset[f] = Math.max(0, low - prevLow) + 0.6 * Math.max(0, high - prevHigh);
+      prevLow = low; prevHigh = high;
+    }
+    // keep only the peaks above the local average
+    const W = Math.round(FPS * 0.4), env = new Float32Array(frames);
+    let sum = 0;
+    for (let f = 0; f < frames; f++) {
+      sum += onset[f] - (f >= W ? onset[f - W] : 0);
+      env[f] = Math.max(0, onset[f] - sum / Math.min(f + 1, W));
+    }
+    if (frames < FPS * 8) return null;                    // too short to tell
+    // rough tempo: which beat length repeats best (with a gentle pull towards dance tempos around 120)
+    const score = bpm => {
+      const lag = 60 * FPS / bpm, l0 = Math.floor(lag), t = lag - l0;
+      let s = 0;
+      for (let f = l0 + 1; f < frames; f++) s += env[f] * (env[f - l0] * (1 - t) + env[f - l0 - 1] * t);
+      return s;
+    };
+    let best = 0, bestBpm = 120;
+    for (let bpm = 60; bpm <= 190; bpm += 0.5) {
+      await breathe();
+      const prior = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 120) / 0.6, 2));
+      const s = (score(bpm) + 0.5 * score(bpm / 2)) * prior;
+      if (s > best) { best = s; bestBpm = bpm; }
+    }
+    // fine tempo and where the beats land: line up a comb of beats with the onsets over the whole stretch
+    let top = -1, out = null;
+    for (let bpm = bestBpm * 0.985; bpm <= bestBpm * 1.015; bpm += 0.02) {
+      await breathe();
+      const period = 60 * FPS / bpm;
+      for (let k = 0; k < 48; k++) {
+        const phase = period * k / 48;
+        let s = 0;
+        for (let x = phase; x < frames - 1; x += period) { const i = Math.floor(x), t = x - i; s += env[i] * (1 - t) + env[i + 1] * t; }
+        if (s > top) { top = s; out = { bpm, offset: (phase + 0.5) / FPS }; }
+      }
+    }
+    while (out.bpm < 78) out.bpm *= 2;                    // keep it in a range people move to
+    while (out.bpm > 180) out.bpm /= 2;
+    return out;
+  },
+};
 
 const sound = {
   ctx: null, master: null, musicBus: null, musicVolume: null, analyser: null, bins: null,
@@ -3814,7 +3907,7 @@ async function startRoom() {
   };
   const keys = new Set();
   const stick = { x: 0, y: 0, id: null };
-  const twoFinger = { on: false, startX: 0, startY: 0, x: 0, y: 0 };   // two-finger walking on touch screens
+  const twoFinger = { on: false, startX: 0, startY: 0, startGap: 0, x: 0, y: 0 };   // two-finger walking on touch screens
   const mouse = { ndc: new THREE.Vector2(), inside: false };
   const PITCH_LIMIT = 1.2;
   const clampPitch = v => Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, v));
@@ -4011,6 +4104,53 @@ async function startRoom() {
   listen(volumeSlider, 'change', () => volumeSlider.blur());          // hand the keys back to walking
   for (const ev of ['pointerdown', 'keydown']) listen(volumeSlider, ev, e => e.stopPropagation());
   listen(page.songFile, 'change', () => { if (page.songFile.files.length) addSongs(page.songFile.files); page.songFile.value = ''; });
+
+  // ---- inside the Shaden showcase page (?embed in the address): the page around the room shows the player, the view
+  //      switch and the tips, so the room keeps a clean screen. The room tells the page what its controls show, and the
+  //      page passes taps back. In fullscreen the page asks for the room's own controls again.
+  (() => {
+    let inShowcase = false;
+    try { inShowcase = window.parent !== window && new URLSearchParams(location.search).has('embed'); } catch { /* not in a frame */ }
+    if (!inShowcase) return;
+    const root = document.documentElement;
+    root.classList.add('embedded');
+    const button = el => ({ id: el.id, cls: el.className, label: el.getAttribute('aria-label') || el.title || '', pressed: el.getAttribute('aria-pressed'), icon: el.querySelector('svg')?.outerHTML || '' });
+    const state = () => ({
+      type: 'shaden-room',
+      room: page.roomName?.textContent || document.title,
+      song: page.nowPlaying.textContent,
+      playing: page.playSong.getAttribute('aria-pressed') === 'true',
+      canRemove: !page.removeSong.hidden,
+      volume: +(document.getElementById('musicVolume')?.value ?? 1),
+      modes: [...page.modes.querySelectorAll('button')].map(b => ({ mode: b.dataset.mode, label: b.textContent.trim(), on: b.getAttribute('aria-checked') === 'true' })),
+      extras: [...document.querySelectorAll('.corner button')].map(button),
+    });
+    let last = '';
+    const send = () => {
+      const now = state(), text = JSON.stringify(now);
+      if (text !== last) { last = text; window.parent.postMessage(now, '*'); }
+    };
+    new MutationObserver(send).observe(page.ui || document.getElementById('ui'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-checked', 'hidden'] });
+    const ids = new Set(['prevSong', 'playSong', 'nextSong', 'removeSong', ...state().extras.map(b => b.id)]);
+    // the page calls this directly (same site, so a tap there still counts as a tap here) or posts the same thing
+    const command = m => {
+      if (!m || typeof m !== 'object') return;
+      if (m.click && ids.has(m.click)) document.getElementById(m.click)?.click();
+      if (m.mode) page.modes.querySelector(`[data-mode="${CSS.escape(m.mode)}"]`)?.click();
+      if (m.files?.length) addSongs(m.files);
+      if (typeof m.volume === 'number') {
+        const v = document.getElementById('musicVolume');
+        if (v) { v.value = m.volume; v.dispatchEvent(new Event('input', { bubbles: true })); }
+      }
+      if ('fullscreen' in m) root.classList.toggle('embedded', !m.fullscreen);
+      if ('modesInside' in m) root.classList.toggle('modes-inside', !!m.modesInside);
+      if (m.hello) last = '';
+      send();
+    };
+    window.shadenRoom = { command };
+    listen(window, 'message', e => { if (e.source === window.parent && e.data?.type === 'shaden-cmd') command(e.data); });
+    send();
+  })();
   listen(page.removeSong, 'click', async () => {
     const title = playlist.current.title;
     await playlist.remove(playlist.index);
@@ -4098,7 +4238,7 @@ async function startRoom() {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     drag.x = e.clientX;
     drag.y = e.clientY;
-    const perPixel = ((1.15 * Math.PI) / innerHeight) * (64 / 90) * 0.85 * (drag.touch ? 1.4 : 1);
+    const perPixel = ((1.15 * Math.PI) / innerHeight) * (64 / 90) * 0.85 * (drag.touch ? 1.2 : 1);
     const now = performance.now(), seconds = Math.max(8, now - look.lastMove) / 1000;
     look.lastMove = now;
     look.yawTarget += dx * perPixel;
@@ -4158,24 +4298,28 @@ async function startRoom() {
   listen(page.stick, 'pointercancel', releaseStick);
   listen(page.stick, 'lostpointercapture', releaseStick);
 
-  // ---- two fingers on the scene: walk. Slide up to go forward, down to go back, sideways to step;
-  //      the further from where they landed, the faster (like the joystick). Looking pauses meanwhile.
-  const TWO_FINGER_RANGE = 120;  // pixels of slide for full speed
+  // ---- two fingers on the scene: walk. Spread them apart to go forward, pinch them together to back up,
+  //      or slide them (up/down/sideways). The further from where they landed, the faster, like the joystick;
+  //      hold still to keep going. Looking pauses meanwhile.
+  const TWO_FINGER_RANGE = 70;   // pixels of slide for full speed
+  const PINCH_RANGE = 60;        // pixels of spread (between the two fingers) for full speed
   const clampUnit = v => Math.max(-1, Math.min(1, v));
   const onSceneTouches = e => {
     const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick')));
     if (touches.length >= 2) {
       const midX = (touches[0].clientX + touches[1].clientX) / 2, midY = (touches[0].clientY + touches[1].clientY) / 2;
+      const gap = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
       if (!twoFinger.on) {
         twoFinger.on = true;
         twoFinger.startX = midX;
         twoFinger.startY = midY;
+        twoFinger.startGap = gap;
         look.drag = null;                              // stop turning while walking with two fingers
         look.yawSpeed = look.pitchSpeed = 0;
         document.documentElement.classList.remove('dragging');
       }
       twoFinger.x = clampUnit((midX - twoFinger.startX) / TWO_FINGER_RANGE);
-      twoFinger.y = clampUnit((midY - twoFinger.startY) / TWO_FINGER_RANGE);
+      twoFinger.y = clampUnit((midY - twoFinger.startY) / TWO_FINGER_RANGE - (gap - twoFinger.startGap) / PINCH_RANGE);
     } else if (twoFinger.on) {
       twoFinger.on = false;
       twoFinger.x = twoFinger.y = 0;
@@ -4185,6 +4329,7 @@ async function startRoom() {
   listen(window, 'touchmove', onSceneTouches, { passive: true });
   listen(window, 'touchend', onSceneTouches);
   listen(window, 'touchcancel', onSceneTouches);
+  listen(window, 'gesturestart', e => e.preventDefault(), { passive: false });   // iPhone: a pinch walks, it doesn't zoom the page
 
   // ---- FPS readout: #fps in the address, or press F
   let fpsForced = false, fpsFrames = 0, fpsSince = performance.now();
@@ -4268,7 +4413,8 @@ async function startRoom() {
       groove.build = groove.section === 'build' ? ((groove.bar - 40) * 16 + (s % 16)) / 128 : 0;
     } else if (on) {
       // someone else's song: a steady 122, and the parts guessed from how loud it is
-      groove.beats += dt * 122 / 60;
+      // someone else's song: follow its own beat once it's been found (a steady 122 until then)
+      groove.beats = tempo.beats(playlist.current, sound.musicFile.currentTime) ?? groove.beats + dt * 122 / 60;
       groove.bar = Math.floor(groove.beats / 4) % 64;
       const target = sound.level > 0.62 ? 'drop' : sound.level < 0.18 ? 'break' : 'groove2';
       if (target !== groove.section && Math.floor(groove.beats) % 16 === 0) groove.section = target;
@@ -4276,7 +4422,7 @@ async function startRoom() {
     }
     groove.chorus = groove.section === 'drop';
     groove.energy += (ENERGY[groove.section] + (groove.section === 'build' ? groove.build * 0.5 : 0) - groove.energy) * approach(1.5, dt);
-    groove.dropAge = groove.section === 'drop' ? groove.dropAge + dt * 122 / 60 : 99;
+    groove.dropAge = groove.section === 'drop' ? groove.dropAge + dt * (tempo.of(playlist.current)?.bpm || 122) / 60 : 99;
     if (groove.section === 'drop' && was !== 'drop' && on) {
       groove.dropAge = 0;
       state.flash = 1;
