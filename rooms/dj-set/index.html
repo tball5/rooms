@@ -265,8 +265,8 @@ header {
   position: absolute;
   left: calc(26px + env(safe-area-inset-left, 0px));
   bottom: calc(26px + env(safe-area-inset-bottom, 0px));
-  width: 124px;
-  height: 124px;
+  width: 150px;
+  height: 150px;
   border-radius: 50%;
   border: 1.5px solid rgba(245, 239, 226, 0.35);
   background: rgba(0, 0, 0, 0.22);
@@ -365,6 +365,24 @@ header {
   .icon-btn { width: 30px; height: 30px; }
   .prompt { bottom: calc(170px + env(safe-area-inset-bottom)); }
   #fps { top: calc(64px + env(safe-area-inset-top, 0px)); right: 18px; }
+}
+/* ===================================================================
+   Touch screens: a clean screen. No instructions on top of the room (the showcase page has them);
+   a small title, the view switch top right, just the buttons bottom right.
+   =================================================================== */
+@media (hover: none) and (pointer: coarse) {
+  .hint-touch, .corner > i, .prompt, .reticle, #musicVolume { display: none !important; }
+  header { padding: 12px calc(12px + env(safe-area-inset-right, 0px)) 0 calc(14px + env(safe-area-inset-left, 0px)); }
+  .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+  .player { margin-top: 10px; max-width: calc(100vw - 28px); }
+  .modes { top: 8px; right: calc(10px + env(safe-area-inset-right, 0px)); padding: 3px; }
+  .modes button { padding: 5px 10px; font-size: 12px; }
+  #pausedChip { top: calc(84px + env(safe-area-inset-top, 0px)); }
+  #toast { top: calc(84px + env(safe-area-inset-top, 0px)); font-size: 12px; max-width: calc(100vw - 40px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .corner { right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
+  .corner .icon-btn { width: 30px; height: 30px; }
+  .corner { gap: 10px; }
+  .stick { left: calc(18px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .loader-dot { animation: none; }
@@ -1369,7 +1387,8 @@ const sound = {
   build() {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return false;
-    const ctx = this.ctx = new AudioContext();
+    // phones: bigger audio buffers, so the 3D view can't make the music crackle
+    const ctx = this.ctx = new AudioContext(IS_TOUCH ? { latencyHint: 'playback' } : undefined);
 
     this.master = ctx.createGain();
     this.master.gain.value = 0;
@@ -1507,6 +1526,7 @@ const sound = {
     const bar = Math.floor(step / 16) % 64;
     return bar < 16 ? 'groove' : bar < 32 ? 'groove2' : bar < 40 ? 'break' : bar < 48 ? 'build' : 'drop';
   },
+  AHEAD: IS_TOUCH ? 0.4 : 0.12,   // seconds of notes booked ahead (more on phones, where frames can be slow)
   startBeat() {
     if (this.beatTimer) return;
     this.houseChains();
@@ -1515,14 +1535,19 @@ const sound = {
     this.nextStepTime = this.ctx.currentTime + 0.06;
     this.beatRef = { step: this.step, time: this.nextStepTime };
     this.beatTimer = setInterval(() => {
-      while (this.nextStepTime < this.ctx.currentTime + 0.12) {
+      while (this.nextStepTime < this.ctx.currentTime + this.AHEAD) {
         this.playStep(this.step, this.nextStepTime);
         this.nextStepTime += stepLength;
         this.step = (this.step + 1) % 1024;
       }
-    }, 25);
+    }, IS_TOUCH ? 50 : 25);
   },
   stopBeat() {
+    // notes already booked ahead would play on after a pause: hush them, then open up again
+    if (this.beatTimer && this.AHEAD > 0.2 && this.musicBus) {
+      const t = this.ctx.currentTime, g = this.musicBus.gain;
+      g.cancelScheduledValues(t); g.setTargetAtTime(0, t, 0.03); g.setTargetAtTime(1, t + this.AHEAD + 0.05, 0.04);
+    }
     clearInterval(this.beatTimer);
     this.beatTimer = 0;
     this.padStop();
@@ -3705,6 +3730,11 @@ async function startRoom() {
   const post = buildPostProcessing(renderer, scene, camera, pixelRatio);
   sound.prepareMusic();
   playlist.addShipped(ROOM.playlist);
+  // real songs shipped with the room play first; "builtinSong": false in room.json drops the built-in one
+  if (playlist.tracks.length > 1) {
+    const builtin = playlist.tracks.shift();
+    if (ROOM.builtinSong !== false) playlist.tracks.push(builtin);
+  }
 
   // models: show progress on the loading screen while they download
   const manager = new THREE.LoadingManager();
@@ -4068,7 +4098,7 @@ async function startRoom() {
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
     drag.x = e.clientX;
     drag.y = e.clientY;
-    const perPixel = ((1.15 * Math.PI) / innerHeight) * (64 / 90) * 0.85 * (drag.touch ? 1.05 : 1);
+    const perPixel = ((1.15 * Math.PI) / innerHeight) * (64 / 90) * 0.85 * (drag.touch ? 1.4 : 1);
     const now = performance.now(), seconds = Math.max(8, now - look.lastMove) / 1000;
     look.lastMove = now;
     look.yawTarget += dx * perPixel;
@@ -4099,7 +4129,7 @@ async function startRoom() {
   listen(window, 'pointercancel', endDrag);
 
   // ---- thumb joystick (touch screens)
-  const STICK_RANGE = 46;
+  const STICK_RANGE = 60;   // pixels the knob travels for full speed
   const moveStick = e => {
     const box = page.stick.getBoundingClientRect();
     let x = e.clientX - (box.left + box.width / 2), y = e.clientY - (box.top + box.height / 2);
@@ -4130,7 +4160,7 @@ async function startRoom() {
 
   // ---- two fingers on the scene: walk. Slide up to go forward, down to go back, sideways to step;
   //      the further from where they landed, the faster (like the joystick). Looking pauses meanwhile.
-  const TWO_FINGER_RANGE = 70;   // pixels of slide for full speed
+  const TWO_FINGER_RANGE = 120;  // pixels of slide for full speed
   const clampUnit = v => Math.max(-1, Math.min(1, v));
   const onSceneTouches = e => {
     const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick')));
@@ -4404,12 +4434,16 @@ async function startRoom() {
     // walking direction from keys, joystick and wheel (relative to where you face)
     const ahead = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - stick.y - twoFinger.y;
     const across = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + stick.x + twoFinger.x;
-    const running = keys.has('ShiftLeft') || keys.has('ShiftRight') || Math.hypot(stick.x, stick.y) > 0.95 || Math.hypot(twoFinger.x, twoFinger.y) > 0.95;
+    const running = keys.has('ShiftLeft') || keys.has('ShiftRight');
+    // touch: speed grows smoothly with how far the thumb goes, from a slow step to faster than a run
+    const thumb = Math.min(1, Math.max(Math.hypot(stick.x, stick.y), Math.hypot(twoFinger.x, twoFinger.y)));
     forward.set(-Math.sin(look.yaw), 0, -Math.cos(look.yaw));
     right.set(Math.cos(look.yaw), 0, -Math.sin(look.yaw));
     wish.set(0, 0, 0).addScaledVector(forward, ahead).addScaledVector(right, across);
     if (wish.lengthSq() > 1) wish.normalize();
-    wish.multiplyScalar(running ? SETTINGS.runSpeed : SETTINGS.walkSpeed).addScaledVector(forward, player.wheel);
+    if (thumb > 0.03 && wish.lengthSq() > 0) wish.setLength(SETTINGS.runSpeed * 1.15 * Math.pow(thumb, 1.25));
+    else wish.multiplyScalar(running ? SETTINGS.runSpeed : SETTINGS.walkSpeed);
+    wish.addScaledVector(forward, player.wheel);
     player.wheel *= Math.exp(-dt * 5);
     player.velocity.lerp(wish, approach(10, dt));
     const prevX = player.position.x, prevZ = player.position.z;
@@ -4497,7 +4531,7 @@ async function startRoom() {
         page.fade.classList.add('out');
         uiTimer = setTimeout(() => {
           page.ui.classList.add('on');
-          toast(IS_TOUCH ? 'Tap ▶ to start the set · slide two fingers to walk' : 'Press ▶ or Space to start the set · steps up to the stage on the right');
+          if (!IS_TOUCH) toast('Press ▶ or Space to start the set · steps up to the stage on the right');
         }, 700);
       });
     }

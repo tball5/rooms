@@ -26,24 +26,28 @@ const ROOMS = [
     kicker: 'For lofi artists, producers and streamers',
     line: 'A rainy-night bedroom with a real 3D city outside the window. Her computer plays your tracks.',
     features: ['Your songs on her computer', 'Posters, neon sign and colours', 'Her and the cat, restyled'],
+    tip: 'Tap the computer, the cat and the window',
   },
   {
     id: 'the-basement', name: 'The Basement', path: 'rooms/the-basement/', preview: 'showcase/previews/the-basement.jpg',
     kicker: 'For bands and garage projects',
     line: 'The band\'s concrete jam space. Visitors play the drums, the guitar and the loop pedal themselves.',
     features: ['Playable drums, guitar and loop pedal', 'Your band members, as characters', 'Flyers and posters on the walls'],
+    tip: 'Tap the drums, the guitar and the amp to play them',
   },
   {
     id: 'dj-set', name: 'DJ Set', path: 'rooms/dj-set/', preview: 'showcase/previews/dj-set.jpg',
     kicker: 'For DJs, clubs and labels',
     line: 'A small house club at night: a DJ on the decks, lasers, a mirror ball, and a drop the whole room feels.',
     features: ['Your DJ in the booth', 'Your venue name in neon', 'Your mixes on the decks'],
+    tip: 'Tap ▶ on the player to start the set',
   },
   {
     id: 'live-concert', name: 'Live Concert', path: 'rooms/live-concert/', preview: 'showcase/previews/live-concert.jpg',
     kicker: 'For bands, festivals and release nights',
     line: 'Headline a festival main stage at night. A packed field, lights that hit with the music, and a stage dive.',
     features: ['Your band on the main stage', 'Screens, merch tent and lineup', 'A crowd that reacts to the show'],
+    tip: 'Tap ▶ on the player to start the show',
   },
 ];
 
@@ -94,6 +98,10 @@ function select(id, enterNow = false) {
   $('posterKicker').textContent = room.kicker;
   $('posterName').textContent = room.name;
   $('posterLine').textContent = room.line;
+  // phones: the same words, plus how to get around, under the window
+  $('notesLine').textContent = room.line;
+  $('notesTips').replaceChildren(...[room.tip, 'Drag one finger to look around', 'Walk with the joystick, or slide two fingers',
+    'Tap + on the player to play your own MP3', 'Switch views top right'].filter(Boolean).map(text => Object.assign(document.createElement('li'), { textContent: text })));
   $('enter').hidden = !!room.soon;
   $('soonCta').hidden = !room.soon;
   $('ownPage').hidden = !!room.soon;
@@ -124,7 +132,9 @@ function enter() {
 $('enter').addEventListener('click', enter);
 $('exit').addEventListener('click', () => select(current.id));
 $('full').addEventListener('click', () => {
-  if (document.fullscreenElement) return document.exitFullscreen();
+  if (document.fullscreenElement || document.webkitFullscreenElement) return (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  // iPhones can't make a page element fullscreen: open the room on its own page instead, which fills the screen
+  if (!(document.fullscreenEnabled || document.webkitFullscreenEnabled)) { if (!current.soon) window.open(roomUrl(current.path), '_blank'); return; }
   (viewer.requestFullscreen || viewer.webkitRequestFullscreen)?.call(viewer);
   if (!live && !current.soon) enter();
 });

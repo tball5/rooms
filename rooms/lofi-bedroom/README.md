@@ -21,7 +21,7 @@ lines you don't need. If you delete room.json completely, you get the showcase e
 |---|---|---|
 | `title` | The name shown in the corner and the browser tab | `"Mika's Room"` |
 | `doors` | Where the door goes when you click it. Another room on the same site (`"../my-other-room/"`) walks you straight through; an outside link (`"https://…"`) shows a card with a Go button. Leave it `""` for a door that isn't connected yet | `{ "door": { "href": "https://example.com/store", "label": "Visit the store" } }` |
-| `playlist` | Songs on her computer. The built-in beat is always track 1, then these | `["music/song1.mp3", "music/song2.mp3"]` |
+| `playlist` | MP3s in this folder (e.g. a `music/` folder). They play first, before the built-in track. Add `"builtinSong": false` to leave the built-in track out | `["music/song1.mp3", "music/song2.mp3"]` |
 | `posters` | Swap any poster for your own picture (names below) | `{ "posterTide": "posters/my-art.jpg" }` |
 | `girl.show` | `false` takes her out (the chair stays) | `false` |
 | `girl.smoking` | `false`: no cigarette, smoke or ashtray | `false` |

@@ -30,7 +30,6 @@
       <a href="#rooms">Rooms</a>
       <a href="#views">Views</a>
       <a href="#builds" data-builds-link hidden>Builds</a>
-      <a href="#pricing">Pricing</a>
       <a href="#faq">FAQs</a>
     </nav>
     <a class="btn btn-primary btn-small" href="#contact">Request a room</a>
@@ -44,7 +43,7 @@
       <h1>Rooms you can walk into<span>for bands, brands and artists.</span></h1>
       <p class="lede">Drop your next release inside a world your fans can walk into. Your songs on the speakers, your band on the stage, your art on the walls. One link, any device.</p>
       <div class="hero-actions">
-        <a class="btn btn-primary" href="#pricing">See pricing</a>
+        <a class="btn btn-primary" href="#contact">Request a room</a>
         <a class="btn btn-secondary" href="#viewer-top">Try a demo</a>
       </div>
     </div>
@@ -72,6 +71,11 @@
         <button class="link" id="exit" type="button" hidden>Leave room</button>
         <button class="link" id="full" type="button">Fullscreen</button>
         <a class="link" id="ownPage" href="#" target="_blank" rel="noopener">Open in new tab ↗</a>
+      </div>
+      <!-- phones: the room's description and how to use it sit here, under the window, so the room itself stays clean -->
+      <div class="viewer-notes" id="viewerNotes">
+        <p class="notes-line" id="notesLine"></p>
+        <ul class="notes-tips" id="notesTips"></ul>
       </div>
     </div>
   </section>
@@ -156,7 +160,8 @@
   </section>
 
   <!-- ============ pricing ============ -->
-  <section class="section" id="pricing">
+  <!-- pricing is off for now: remove "hidden" to bring it back (and the nav and footer links) -->
+  <section class="section" id="pricing" hidden>
     <div class="section-head">
       <p class="eyebrow">Pricing</p>
       <h2>Pick your world<span>we build the rest.</span></h2>
@@ -261,7 +266,7 @@
       <p>Walk-around 3D rooms for music.</p>
     </div>
     <div class="foot-col"><p>Rooms</p><a href="rooms/lofi-bedroom/" target="_blank" rel="noopener">Lofi Bedroom</a><a href="rooms/the-basement/" target="_blank" rel="noopener">The Basement</a><a href="rooms/dj-set/" target="_blank" rel="noopener">DJ Set</a><a href="rooms/live-concert/" target="_blank" rel="noopener">Live Concert</a></div>
-    <div class="foot-col"><p>Company</p><a href="#builds" data-builds-link hidden>Games &amp; builds</a><a href="#pricing">Pricing</a><a href="#faq">FAQs</a><a href="#contact">Contact</a></div>
+    <div class="foot-col"><p>Company</p><a href="#builds" data-builds-link hidden>Games &amp; builds</a><a href="#faq">FAQs</a><a href="#contact">Contact</a></div>
   </div>
   <p class="copy">© <span id="year">2026</span> Shaden Technology. All rights reserved. The rooms, characters, code and artwork on this site belong to Shaden Technology and may not be copied or reused without permission.</p>
 </footer>

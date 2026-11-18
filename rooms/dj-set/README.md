@@ -26,7 +26,7 @@ dj-set/
 | `venue` | The club's name: neon sign, booth front, LED wall, flyers | `"LOW HOUSE"` |
 | `djName` | The DJ's name on the LED wall and flyers | `"DJ NOVA"` |
 | `doors` | Where the way out goes. An outside link shows a card with a Go button; another room on the same site walks you straight through. `""` = not connected yet | `{ "door": { "href": "https://example.com/tickets", "label": "Get tickets" } }` |
-| `playlist` | Songs or mixes on the player. The built-in track is always first, then these | `["music/mix1.mp3"]` |
+| `playlist` | MP3s on the player, in this folder (e.g. a `music/` folder). They play first, before the built-in track. Add `"builtinSong": false` to leave the built-in track out | `["music/mix1.mp3"]` |
 | `posters` | Swap a flyer for your own picture (names below) | `{ "posterFlyer1": "posters/flyer.jpg" }` |
 | `dj.show` / `hair` / `eyes` / `skin` / `hoodie` / `pants` / `shoes` | The DJ. `show: false` takes her out | `"#ff5fa8"` |
 | `bartender.show` / `shirt` / `skin` / `hair` | The bartender | `"#2a6a8a"` |

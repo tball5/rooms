@@ -18,7 +18,7 @@ live-concert/
 |---|---|---|
 | `title` | The name in the corner and the browser tab | `"Our Room"` |
 | `doors` | Where the door goes. An outside link shows a card with a Go button; another room on the same site walks you straight through. `""` = not connected yet | `{ "door": { "href": "https://example.com/tickets", "label": "Get tickets" } }` |
-| `playlist` | Songs on the player. The built-in track is always first, then these | `["music/song1.mp3"]` |
+| `playlist` | MP3s in this folder (e.g. a `music/` folder). They play first, before the built-in track. Add `"builtinSong": false` to leave the built-in track out | `["music/song1.mp3"]` |
 | `posters` | Swap a poster for your own picture (names below) | `{ "posterBand": "posters/flyer.jpg" }` |
 | `band` | The band's name: kick drum, flyers, screens | `"NIGHT SIGNAL"` |
 | `guitarist.show` / `hair` / `skin` / `eyes` / `flannel` / `beanie` / `jeans` / `guitar` | The guitarist. `show: false` takes him out | `"#ff5fa8"` |

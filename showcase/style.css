@@ -80,6 +80,11 @@ h1 span, h2 span { display: block; color: var(--dim); }
 .spinner { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid var(--line-2); border-top-color: var(--text); animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .viewer-bar { display: flex; justify-content: flex-end; gap: 22px; margin-top: 12px; }
+/* phones only: the room's words and tips under the window */
+.viewer-notes { display: none; margin-top: 22px; }
+.notes-line { color: #c9c9c9; font-size: 15px; margin-bottom: 14px; }
+.notes-tips { list-style: none; display: grid; gap: 6px; font: 400 12.5px/1.5 var(--mono); color: var(--muted); }
+.notes-tips li::before { content: "— "; color: var(--dim); }
 
 /* ---------- sections ---------- */
 .section { width: var(--wide); margin: 140px auto 0; padding-top: 48px; border-top: 1px solid var(--line); }
@@ -123,16 +128,16 @@ main { counter-reset: section; }
 .view figcaption b { display: block; font-weight: 500; font-size: 16px; margin-bottom: 4px; }
 .view figcaption span { color: var(--muted); }
 
-/* features: a ruled grid */
-.grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
-.feature { padding: 32px 28px 36px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.feature .num, .steps .num { display: block; font: 400 12px var(--mono); color: var(--dim); margin-bottom: 40px; }
+/* features: plain text on the page, no boxes */
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px 56px; }
+.feature { padding: 0; }
+.feature .num, .steps .num { display: block; font: 400 12px var(--mono); color: var(--dim); margin-bottom: 14px; }
 .feature h3, .steps h3 { font-size: 17px; font-weight: 500; letter-spacing: -0.015em; margin-bottom: 8px; }
 .feature p, .steps p { color: var(--muted); font-size: 14px; }
 
 /* steps */
-.steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.steps li { padding: 24px 22px 28px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-1); }
+.steps { list-style: none; display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px 48px; }
+.steps li { padding: 0; }
 
 /* built by Shaden */
 .builds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -223,6 +228,11 @@ main { counter-reset: section; }
   .hero-copy { margin-bottom: 44px; }
   .viewer { aspect-ratio: 4 / 5; }
   .hint { display: none; }
+  .viewer-bar { justify-content: space-between; gap: 12px; }
+  .viewer-notes { display: block; }
+  .poster-kicker, .poster h2, .poster-line { display: none; }
+  .poster-body { left: 0; right: 0; display: flex; justify-content: center; }
+  .poster-shade { background: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, transparent 40%); }
   .section { margin-top: 96px; }
   .section-head { grid-template-columns: 1fr; row-gap: 16px; margin-bottom: 32px; }
   .views, .cards, .steps, .grid, .builds { grid-template-columns: 1fr; }
@@ -234,4 +244,11 @@ main { counter-reset: section; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* touch screens wider than a phone (tablets): the same clean window, words underneath */
+@media (hover: none) and (pointer: coarse) and (min-width: 721px) {
+  .hint { display: none; }
+  .viewer-notes { display: block; }
+  .poster-kicker, .poster-line { display: none; }
 }
