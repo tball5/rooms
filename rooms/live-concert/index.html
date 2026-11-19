@@ -259,30 +259,38 @@ header {
 .crowd-noise[aria-pressed="true"] .cross { opacity: 0; }
 .pause[aria-pressed="true"] .bars { display: none; }
 
-/* Thumb joystick (touch screens only) */
+/* Arrow pad (touch screens only): up and down walk, left and right turn; slide between them */
 .stick {
   position: absolute;
-  left: calc(26px + env(safe-area-inset-left, 0px));
-  bottom: calc(26px + env(safe-area-inset-bottom, 0px));
-  width: 150px;
-  height: 150px;
-  border-radius: 50%;
-  border: 1.5px solid rgba(245, 239, 226, 0.35);
-  background: rgba(0, 0, 0, 0.22);
+  left: calc(22px + env(safe-area-inset-left, 0px));
+  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  width: 138px;
+  height: 138px;
   display: none;
+  touch-action: none;
 }
-.stick-knob {
+.stick-knob { display: none; }
+.pad-arrow {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 50px;
-  height: 50px;
-  margin: -25px 0 0 -25px;
-  border-radius: 50%;
-  background: rgba(245, 239, 226, 0.85);
-  transition: transform 0.18s ease;
+  width: 46px;
+  height: 46px;
+  padding: 9px;
+  border-radius: 12px;
+  background: rgba(10, 10, 12, 0.42);
+  border: 1px solid rgba(245, 239, 226, 0.28);
+  fill: none;
+  stroke: rgba(245, 239, 226, 0.92);
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: background .12s, border-color .12s;
 }
-.stick.active .stick-knob { transition: none; }
+.pad-arrow[data-dir="up"] { left: 46px; top: 0; }
+.pad-arrow[data-dir="down"] { left: 46px; bottom: 0; }
+.pad-arrow[data-dir="left"] { left: 0; top: 46px; }
+.pad-arrow[data-dir="right"] { right: 0; top: 46px; }
+.stick.up .pad-arrow[data-dir="up"], .stick.down .pad-arrow[data-dir="down"],
+.stick.left .pad-arrow[data-dir="left"], .stick.right .pad-arrow[data-dir="right"] { background: rgba(245, 239, 226, 0.3); border-color: rgba(245, 239, 226, 0.7); }
 
 .hint-touch { display: none; }
 @media (hover: none) and (pointer: coarse) {
@@ -389,6 +397,8 @@ html.embedded .logo, html.embedded .player, html.embedded .corner, html.embedded
 html.embedded:not(.modes-inside) .modes { display: none !important; }   /* on phones the page shows it above the window */
 html.embedded #toast { top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 html.embedded .prompt { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
+/* on a phone, inside the showcase: nothing but the room and the arrow pad */
+html.embedded.embed-phone #toast, html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embedded.embed-phone .hint-touch { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .loader-dot { animation: none; }
 }
@@ -449,7 +459,7 @@ html.embedded .prompt { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
   <div class="reticle" id="reticle"></div>
   <button class="prompt" id="prompt" hidden></button>
 
-  <div class="stick" id="stick" aria-label="Walk"><div class="stick-knob" id="stickKnob"></div></div>
+  <div class="stick" id="stick" aria-label="Walk: up and down to walk, left and right to turn"><div class="stick-knob" id="stickKnob"></div><svg class="pad-arrow" data-dir="up" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(0 12 12)"/></svg><svg class="pad-arrow" data-dir="right" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(90 12 12)"/></svg><svg class="pad-arrow" data-dir="down" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(180 12 12)"/></svg><svg class="pad-arrow" data-dir="left" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(270 12 12)"/></svg></div>
 
   <div class="corner">
     <span class="hint-desk">WASD to walk</span><i class="hint-desk"></i><span class="hint-desk">Drag to look</span><i class="hint-desk"></i><span class="hint-desk">Space: start the show</span><i class="hint-desk"></i><span class="hint-desk">H to switch view</span><i class="hint-desk"></i><span class="hint-desk">Drop an MP3 to play it</span>
@@ -1486,6 +1496,7 @@ const SETTINGS = {
   playerRadius: 0.32,          // how close you can get to walls and furniture
   walkSpeed: 1.9,              // metres per second
   runSpeed: 3.6,               // with Shift
+  touchSpeed: 6.8,             // top speed on a phone (arrow pad or a full pinch); sized to the room
   reach: 3.2,                  // how far away you can use things
   fov: 68,                     // portrait phones get a wider view (80)
 };
@@ -4753,6 +4764,7 @@ async function startRoom() {
       }
       if ('fullscreen' in m) root.classList.toggle('embedded', !m.fullscreen);
       if ('modesInside' in m) root.classList.toggle('modes-inside', !!m.modesInside);
+      if ('phone' in m) root.classList.toggle('embed-phone', !!m.phone);
       if (m.hello) last = '';
       send();
     };
@@ -4877,16 +4889,20 @@ async function startRoom() {
   listen(window, 'pointerup', endDrag);
   listen(window, 'pointercancel', endDrag);
 
-  // ---- thumb joystick (touch screens)
-  const STICK_RANGE = 60;   // pixels the knob travels for full speed
+  // ---- arrow pad (touch screens): up and down walk, left and right turn. Press anywhere past the middle;
+  //      slide your thumb between arrows, or press a corner to walk and turn together.
   const moveStick = e => {
     const box = page.stick.getBoundingClientRect();
-    let x = e.clientX - (box.left + box.width / 2), y = e.clientY - (box.top + box.height / 2);
-    const length = Math.hypot(x, y);
-    if (length > STICK_RANGE) { x *= STICK_RANGE / length; y *= STICK_RANGE / length; }
-    page.stickKnob.style.transform = `translate(${x}px, ${y}px)`;
-    stick.x = x / STICK_RANGE;
-    stick.y = y / STICK_RANGE;
+    const x = e.clientX - (box.left + box.width / 2), y = e.clientY - (box.top + box.height / 2);
+    const length = Math.hypot(x, y), dead = 12;
+    if (length < dead) { stick.x = stick.y = 0; }
+    else {
+      const angle = Math.atan2(y, x), eighth = Math.round(angle / (Math.PI / 4));     // 8 directions
+      stick.x = Math.round(Math.cos(eighth * Math.PI / 4));
+      stick.y = Math.round(Math.sin(eighth * Math.PI / 4));
+    }
+    page.stick.classList.toggle('up', stick.y < 0); page.stick.classList.toggle('down', stick.y > 0);
+    page.stick.classList.toggle('left', stick.x < 0); page.stick.classList.toggle('right', stick.x > 0);
   };
   listen(page.stick, 'pointerdown', e => {
     e.preventDefault();
@@ -4900,8 +4916,7 @@ async function startRoom() {
     if (e.pointerId !== stick.id) return;
     stick.id = null;
     stick.x = stick.y = 0;
-    page.stick.classList.remove('active');
-    page.stickKnob.style.transform = '';
+    page.stick.classList.remove('active', 'up', 'down', 'left', 'right');
   };
   listen(page.stick, 'pointerup', releaseStick);
   listen(page.stick, 'pointercancel', releaseStick);
@@ -4910,8 +4925,8 @@ async function startRoom() {
   // ---- two fingers on the scene: walk. Spread them apart to go forward, pinch them together to back up,
   //      or slide them (up/down/sideways). The further from where they landed, the faster, like the joystick;
   //      hold still to keep going. Looking pauses meanwhile.
-  const TWO_FINGER_RANGE = 70;   // pixels of slide for full speed
-  const PINCH_RANGE = 60;        // pixels of spread (between the two fingers) for full speed
+  const TWO_FINGER_RANGE = 45;   // pixels of slide for full speed
+  const PINCH_RANGE = 30;        // pixels of spread (between the two fingers) for full speed
   const clampUnit = v => Math.max(-1, Math.min(1, v));
   const onSceneTouches = e => {
     const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick')));
@@ -5310,6 +5325,7 @@ async function startRoom() {
       look.pitchSpeed *= friction;
       if (Math.abs(look.yawSpeed) + Math.abs(look.pitchSpeed) < 0.01) look.yawSpeed = look.pitchSpeed = 0;
     }
+    look.yawTarget -= stick.x * 2.1 * dt;          // arrow pad: left and right turn you
     const follow = approach(look.drag ? 22 : 12, dt);
     look.yaw += (look.yawTarget - look.yaw) * follow;
     look.pitch += (look.pitchTarget - look.pitch) * follow;
@@ -5317,15 +5333,15 @@ async function startRoom() {
     // walking direction from keys, joystick and wheel (relative to where you face)
     if (dive.on) { keys.clear(); player.wheel = 0; stick.x = stick.y = twoFinger.x = twoFinger.y = 0; }
     const ahead = (keys.has('KeyW') || keys.has('ArrowUp') ? 1 : 0) - (keys.has('KeyS') || keys.has('ArrowDown') ? 1 : 0) - stick.y - twoFinger.y;
-    const across = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + stick.x + twoFinger.x;
+    const across = (keys.has('KeyD') || keys.has('ArrowRight') ? 1 : 0) - (keys.has('KeyA') || keys.has('ArrowLeft') ? 1 : 0) + twoFinger.x;
     const running = keys.has('ShiftLeft') || keys.has('ShiftRight');
     // touch: speed grows smoothly with how far the thumb goes, from a slow step to faster than a run
-    const thumb = Math.min(1, Math.max(Math.hypot(stick.x, stick.y), Math.hypot(twoFinger.x, twoFinger.y)));
+    const thumb = Math.min(1, Math.max(Math.abs(stick.y), Math.hypot(twoFinger.x, twoFinger.y)));
     forward.set(-Math.sin(look.yaw), 0, -Math.cos(look.yaw));
     right.set(Math.cos(look.yaw), 0, -Math.sin(look.yaw));
     wish.set(0, 0, 0).addScaledVector(forward, ahead).addScaledVector(right, across);
     if (wish.lengthSq() > 1) wish.normalize();
-    if (thumb > 0.03 && wish.lengthSq() > 0) wish.setLength(SETTINGS.runSpeed * 1.15 * Math.pow(thumb, 1.25));
+    if (thumb > 0.03 && wish.lengthSq() > 0) wish.setLength(SETTINGS.touchSpeed * thumb);
     else wish.multiplyScalar(running ? SETTINGS.runSpeed : SETTINGS.walkSpeed);
     wish.addScaledVector(forward, player.wheel);
     player.wheel *= Math.exp(-dt * 5);

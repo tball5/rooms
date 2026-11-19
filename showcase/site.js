@@ -64,7 +64,9 @@ const tabs = document.querySelector('.tabs');
 for (const room of ROOMS) {
   const b = document.createElement('button');
   b.className = 'tab'; b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.id = room.id;
-  b.innerHTML = room.name + (room.soon ? '<span class="soon">SOON</span>' : '');
+  // two words, two spans: on phones they stack ("The" over "Basement") so all four tabs fit
+  const [first, ...rest] = room.name.split(' ');
+  b.innerHTML = `<span>${first}</span> <span>${rest.join(' ')}</span>` + (room.soon ? '<span class="soon">SOON</span>' : '');
   b.addEventListener('click', () => select(room.id, live));
   tabs.append(b);
 }
@@ -96,9 +98,9 @@ function select(id, enterNow = false) {
   $('posterLine').textContent = room.line;
   // phones: the same words, plus how to get around, under the window
   $('notesLine').textContent = room.line;
-  $('notesTips').replaceChildren(...[room.tip, 'Drag one finger to look around', 'Walk with the joystick, or spread two fingers apart (pinch them to back up)',
-    'Tap + under the window to add your own songs', 'Switch views above the window'].filter(Boolean).map(text => Object.assign(document.createElement('li'), { textContent: text })));
-  $('hint').textContent = `WASD to walk · drag to look · ${room.keys} · H to switch views · drop in MP3s`;
+  $('notesTips').replaceChildren(...[room.tip, 'Drag one finger to look around', 'Walk with the arrows (left and right turn you), or spread two fingers apart to go forward',
+    'Tap + under the window to add your own songs', 'Switch views under the window'].filter(Boolean).map(text => Object.assign(document.createElement('li'), { textContent: text })));
+  $('hint').textContent = `WASD to walk · drag to look · ${room.keys} · drop in your own MP3s`;
   deckIdle(room);
   $('enter').hidden = !!room.soon;
   $('soonCta').hidden = !room.soon;
@@ -139,7 +141,12 @@ function tell(message) {
 }
 // desktop: the view switch stays inside the window, top right, as the room draws it; phones and tablets get it above
 const DESK = matchMedia('(min-width: 721px) and (hover: hover) and (pointer: fine)');
-const placeSwitch = () => { document.body.classList.toggle('switch-inside', DESK.matches); tell({ modesInside: DESK.matches }); };
+const placeSwitch = () => {
+  document.body.classList.toggle('switch-inside', DESK.matches);
+  // phones and tablets: the switch sits in the deck under the window, next to the sound button
+  (DESK.matches ? document.querySelector('.viewer-head') : $('deck').querySelector('.deck-side')).prepend(viewSwitch);
+  tell({ modesInside: DESK.matches, phone: !DESK.matches });
+};
 DESK.addEventListener?.('change', placeSwitch);
 const backToRoom = () => { try { frame?.contentWindow.focus(); } catch {} };       // so WASD keeps walking
 function renderSwitch(modes, enabled) {
