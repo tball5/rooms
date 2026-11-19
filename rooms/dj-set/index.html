@@ -11,6 +11,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>
+/* Phones and tablets get html.touch: the arrow pad, the phone layout. Checked here, before the page draws, because
+   some phones don't report themselves through the CSS touch media queries; any touch at all switches it on too. */
+(function () {
+  var u = navigator.userAgent, root = document.documentElement;
+  if (matchMedia('(hover: none) and (pointer: coarse)').matches || /iPhone|iPad|iPod|Android|Mobile/i.test(u) || (/Macintosh/.test(u) && navigator.maxTouchPoints > 1)) root.classList.add('touch');
+  addEventListener('touchstart', function () { root.classList.add('touch'); }, { once: true, passive: true });
+})();
+</script>
 <title>DJ Set</title>
 <meta name="description" content="A small house club at night: a DJ on the decks, a bar, a lounge, lasers and a mirror ball. Press play to start the set.">
 
@@ -107,7 +116,8 @@ header {
   text-transform: uppercase;
   transition: opacity 0.4s;
 }
-#toast { top: calc(72 * var(--u) + env(safe-area-inset-top, 0px)); letter-spacing: 0.04em; text-transform: none; font-size: 13px; opacity: 0; }
+#toast { top: auto; bottom: calc(68 * var(--u) + env(safe-area-inset-bottom, 0px)); letter-spacing: 0.02em; text-transform: none; font-size: 13px; opacity: 0;
+  max-width: min(560px, calc(100vw - 32px)); width: max-content; white-space: normal; text-align: center; line-height: 1.4; }
 #toast.show { opacity: 1; }
 
 /* Label for the thing you're looking at / pointing at; tap it on a phone to use it */
@@ -294,11 +304,6 @@ header {
 .stick.left .pad-arrow[data-dir="left"], .stick.right .pad-arrow[data-dir="right"] { background: rgba(245, 239, 226, 0.3); border-color: rgba(245, 239, 226, 0.7); }
 
 .hint-touch { display: none; }
-@media (hover: none) and (pointer: coarse) {
-  .hint-desk { display: none !important; }
-  .hint-touch { display: inline; }
-  .stick, .reticle { display: block; }
-}
 
 /* ===================================================================
    Loading screen (with progress for models, and a message if three.js can't load)
@@ -375,23 +380,52 @@ header {
   #fps { top: calc(64px + env(safe-area-inset-top, 0px)); right: 18px; }
 }
 /* ===================================================================
-   Touch screens: a clean screen. No instructions on top of the room (the showcase page has them);
-   a small title, the view switch top right, just the buttons bottom right.
+   Touch screens (html.touch): a clean screen. Small title top left, view switch top right with the ?
+   (how to get around) under it, the music player along the bottom, the arrow pad and sound buttons above it.
    =================================================================== */
-@media (hover: none) and (pointer: coarse) {
-  .hint-touch, .corner > i, .prompt, .reticle, #musicVolume { display: none !important; }
-  header { padding: 12px calc(12px + env(safe-area-inset-right, 0px)) 0 calc(14px + env(safe-area-inset-left, 0px)); }
-  .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
-  .player { margin-top: 10px; max-width: calc(100vw - 28px); }
-  .modes { top: 8px; right: calc(10px + env(safe-area-inset-right, 0px)); padding: 3px; }
-  .modes button { padding: 5px 10px; font-size: 12px; }
-  #pausedChip { top: calc(84px + env(safe-area-inset-top, 0px)); }
-  #toast { top: calc(84px + env(safe-area-inset-top, 0px)); font-size: 12px; max-width: calc(100vw - 40px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .corner { right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); gap: 4px; }
-  .corner .icon-btn { width: 30px; height: 30px; }
-  .corner { gap: 10px; }
-  .stick { left: calc(18px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); }
+html.touch .hint-desk, html.touch .hint-touch, html.touch .corner > i, html.touch .corner > span, html.touch .prompt, html.touch .reticle, html.touch #musicVolume { display: none !important; }
+html.touch .stick { display: block; }
+html.touch header { padding: calc(10px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 0 calc(14px + env(safe-area-inset-left, 0px)); }
+html.touch .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
+html.touch .modes { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); padding: 3px; }
+html.touch .modes button { padding: 5px 10px; font-size: 12px; }
+html.touch .player {
+  position: fixed; margin: 0; max-width: none; width: auto;
+  left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  padding: 6px 10px 6px 8px; border-radius: 16px;
 }
+html.touch .player .now { flex: 1; }
+html.touch .player .icon-btn { width: 34px; height: 34px; padding: 6px; }
+html.touch .stick { left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
+html.touch .corner { right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
+html.touch .corner .icon-btn { width: 32px; height: 32px; }
+html.touch #toast { top: auto; bottom: calc(226px + env(safe-area-inset-bottom, 0px)); }
+html.touch #pausedChip { top: calc(56px + env(safe-area-inset-top, 0px)); }
+.help-btn, .help-panel { display: none; }
+html.touch .help-btn {
+  display: grid; place-items: center; position: absolute; pointer-events: auto; cursor: pointer;
+  top: calc(52px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+  width: 34px; height: 34px; border-radius: 50%; font: 600 15px/1 inherit; color: inherit;
+  background: rgba(18, 12, 34, 0.55); border: 1px solid rgba(245, 239, 226, 0.22);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+html.touch .help-btn[aria-expanded="true"] { background: rgba(245, 239, 226, 0.9); color: #120c22; }
+html.touch .help-panel:not([hidden]) {
+  display: block; position: absolute; pointer-events: auto;
+  top: calc(94px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+  width: min(270px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 14px;
+  background: rgba(14, 10, 26, 0.82); border: 1px solid rgba(245, 239, 226, 0.18);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  font-size: 13px; line-height: 1.45;
+}
+.help-panel p { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.6; margin: 0 0 6px; }
+.help-panel ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 5px; }
+/* inside the showcase on a phone the page shows the player and tips: just the room and the arrow pad */
+html.touch.embedded .stick { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+html.touch.embedded #toast { bottom: calc(164px + env(safe-area-inset-bottom, 0px)) !important; }
+html.embedded .help-btn, html.embedded .help-panel { display: none !important; }
+/* nobody pauses the whole room any more: the music's play button pauses the music */
+.pause { display: none !important; }
 /* Inside the Shaden showcase page: the page around the room has the player, the view switch and the tips,
    so the room shows none of its own controls; messages sit at the bottom. (Fullscreen brings the controls back.) */
 html.embedded .logo, html.embedded .player, html.embedded .corner, html.embedded #pausedChip { display: none !important; }
@@ -399,7 +433,7 @@ html.embedded:not(.modes-inside) .modes { display: none !important; }   /* on ph
 html.embedded #toast { top: auto !important; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
 html.embedded .prompt { bottom: calc(56px + env(safe-area-inset-bottom, 0px)); }
 /* on a phone, inside the showcase: nothing but the room and the arrow pad */
-html.embedded.embed-phone #toast, html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embedded.embed-phone .hint-touch { display: none !important; }
+html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embedded.embed-phone .hint-touch { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   .loader-dot { animation: none; }
 }
@@ -462,6 +496,19 @@ html.embedded.embed-phone #toast, html.embedded.embed-phone .prompt, html.embedd
 
   <div class="stick" id="stick" aria-label="Walk: up and down to walk, left and right to turn"><div class="stick-knob" id="stickKnob"></div><svg class="pad-arrow" data-dir="up" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(0 12 12)"/></svg><svg class="pad-arrow" data-dir="right" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(90 12 12)"/></svg><svg class="pad-arrow" data-dir="down" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(180 12 12)"/></svg><svg class="pad-arrow" data-dir="left" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(270 12 12)"/></svg></div>
 
+    <!-- touch screens: how to get around, behind the ? button under the view switch -->
+    <button class="help-btn" id="helpBtn" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="How to get around">?</button>
+    <div class="help-panel" id="helpPanel" hidden>
+      <p>Getting around</p>
+      <ul>
+        <li>▶ on the player starts the set</li>
+        <li>Drag one finger to look around</li>
+        <li>Arrows: up and down walk, left and right turn</li>
+        <li>Or spread two fingers to walk forward, pinch to back up</li>
+        <li>Tap people and things to say hi or use them</li>
+        <li>+ on the player adds your own songs</li>
+      </ul>
+    </div>
   <div class="corner">
     <span class="hint-desk">WASD to walk</span><i class="hint-desk"></i><span class="hint-desk">Drag to look</span><i class="hint-desk"></i><span class="hint-desk">Space: start the set</span><i class="hint-desk"></i><span class="hint-desk">H to switch view</span><i class="hint-desk"></i><span class="hint-desk">Drop an MP3 to play it</span>
     <span class="hint-touch">Drag to look · ▶ starts the set</span>
@@ -1161,7 +1208,7 @@ const HOUSE_CHORDS = [
    --------------------------------------------------------------------- */
 // A phone or tablet is judged by the device, not the window size.
 const IS_PHONE = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) <= 820;
-const IS_TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
+const IS_TOUCH = document.documentElement.classList.contains('touch');   // set in the page head
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const SETTINGS = {
@@ -4115,6 +4162,11 @@ async function startRoom() {
   listen(volumeSlider, 'change', () => volumeSlider.blur());          // hand the keys back to walking
   for (const ev of ['pointerdown', 'keydown']) listen(volumeSlider, ev, e => e.stopPropagation());
   listen(page.songFile, 'change', () => { if (page.songFile.files.length) addSongs(page.songFile.files); page.songFile.value = ''; });
+  // ---- touch screens: the ? under the view switch shows how to get around
+  const helpBtn = document.getElementById('helpBtn'), helpPanel = document.getElementById('helpPanel');
+  const showHelp = open => { helpPanel.hidden = !open; helpBtn.setAttribute('aria-expanded', String(open)); };
+  listen(helpBtn, 'click', e => { e.stopPropagation(); showHelp(helpPanel.hidden); });
+  listen(window, 'pointerdown', e => { if (!helpPanel.hidden && !e.target.closest('#helpPanel, #helpBtn')) showHelp(false); });
 
   // ---- inside the Shaden showcase page (?embed in the address): the page around the room shows the player, the view
   //      switch and the tips, so the room keeps a clean screen. The room tells the page what its controls show, and the
@@ -4134,7 +4186,7 @@ async function startRoom() {
       canRemove: !page.removeSong.hidden,
       volume: +(document.getElementById('musicVolume')?.value ?? 1),
       modes: [...page.modes.querySelectorAll('button')].map(b => ({ mode: b.dataset.mode, label: b.textContent.trim(), on: b.getAttribute('aria-checked') === 'true' })),
-      extras: [...document.querySelectorAll('.corner button')].map(button),
+      extras: [...document.querySelectorAll('.corner button:not(.pause)')].map(button),
     });
     let last = '';
     const send = () => {
@@ -4233,7 +4285,7 @@ async function startRoom() {
   });
   listen(document.documentElement, 'pointerleave', () => { mouse.inside = false; });
   listen(window, 'pointerdown', e => {
-    if (e.target.closest('a, button, .stick') || (e.pointerType === 'mouse' && e.button !== 0) || look.drag) return;
+    if (e.target.closest('a, button, .stick, .help-panel') || (e.pointerType === 'mouse' && e.button !== 0) || look.drag) return;
     look.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, startTime: performance.now(), touch: e.pointerType === 'touch' };
     look.yawSpeed = look.pitchSpeed = 0;
     look.lastMove = performance.now();
@@ -4320,7 +4372,7 @@ async function startRoom() {
   const PINCH_RANGE = 30;        // pixels of spread (between the two fingers) for full speed
   const clampUnit = v => Math.max(-1, Math.min(1, v));
   const onSceneTouches = e => {
-    const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick')));
+    const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick, .help-panel')));
     if (touches.length >= 2) {
       const midX = (touches[0].clientX + touches[1].clientX) / 2, midY = (touches[0].clientY + touches[1].clientY) / 2;
       const gap = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
