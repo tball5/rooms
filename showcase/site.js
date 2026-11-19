@@ -6,8 +6,8 @@
 const SITE = {
   // Where requests go. With formEndpoint set (e.g. a Formspree address), the form sends straight to you.
   // Without it, the form opens the visitor's email app addressed to contactEmail.
-  contactEmail: 'hello@example.com',   // TODO: the real Shaden Tech address
-  formEndpoint: '',                    // TODO: Formspree form address, e.g. 'https://formspree.io/f/xxxxxxx'
+  contactEmail: 'hello@example.com',   // only used (and shown) if formEndpoint is empty
+  formEndpoint: 'https://formspree.io/f/xljblzbr',   // Formspree: requests go straight to the inbox on that account
 };
 
 
@@ -169,6 +169,7 @@ function renderSwitch(modes, enabled) {
 function deckIdle(room) {
   renderSwitch((room.views || []).map((label, i) => ({ mode: ['lofi', 'mix', 'code'][i], label, on: i === 0 })), false);
   $('dSong').textContent = room.soon ? 'Coming soon' : 'Enter the room to play music';
+  $('dBpm').textContent = '';
   $('dPlay').setAttribute('aria-pressed', 'false');
   for (const id of ['dPrev', 'dNext']) $(id).disabled = true;
   $('dVolume').disabled = true; $('dRemove').hidden = true;
@@ -182,6 +183,7 @@ window.addEventListener('message', e => {
   $('deck').classList.remove('idle');
   renderSwitch(s.modes, true);
   $('dSong').textContent = s.song;
+  $('dBpm').textContent = s.bpm || '';
   $('dPlay').setAttribute('aria-pressed', String(s.playing));
   $('dPlay').setAttribute('aria-label', s.playing ? 'Pause music' : 'Play music');
   for (const id of ['dPrev', 'dNext']) $(id).disabled = false;
@@ -283,7 +285,6 @@ $('enter').addEventListener('pointerenter', warmUp);
 
 // ---- contact form ---------------------------------------------------------------------------------------
 const form = $('form'), note = $('formNote');
-$('contactDirect').innerHTML = `Or email us directly: <a href="mailto:${SITE.contactEmail}">${SITE.contactEmail}</a>`;
 form.addEventListener('submit', async e => {
   e.preventDefault();
   if (!form.reportValidity()) return;
@@ -291,11 +292,13 @@ form.addEventListener('submit', async e => {
   note.className = 'form-note'; note.textContent = 'Sending…';
   if (SITE.formEndpoint) {
     try {
-      const res = await fetch(SITE.formEndpoint, { method: 'POST', headers: { Accept: 'application/json' }, body: new FormData(form) });
+      const sending = new FormData(form);
+      sending.append('_subject', 'Room request: ' + (data.project || data.name));   // the subject line of the email you get
+      const res = await fetch(SITE.formEndpoint, { method: 'POST', headers: { Accept: 'application/json' }, body: sending });
       if (!res.ok) throw new Error(res.status);
       form.reset(); note.className = 'form-note ok'; note.textContent = 'Thanks! We\'ll be in touch soon.';
     } catch {
-      note.className = 'form-note err'; note.textContent = `That didn't send. Email us at ${SITE.contactEmail} instead.`;
+      note.className = 'form-note err'; note.textContent = 'That didn\'t send. Check your connection and try again.';
     }
     return;
   }

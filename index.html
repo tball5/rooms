@@ -76,6 +76,7 @@
           <button class="ctl play" id="dPlay" type="button" aria-label="Play music" aria-pressed="false"><svg viewBox="0 0 24 24"><path class="play solid" d="M8 6.2v11.6a.8.8 0 0 0 1.2.7l9.2-5.8a.8.8 0 0 0 0-1.4L9.2 5.5A.8.8 0 0 0 8 6.2Z"/><g class="bars"><rect class="solid" x="7" y="6" width="3.2" height="12" rx="1"/><rect class="solid" x="13.8" y="6" width="3.2" height="12" rx="1"/></g></svg></button>
           <button class="ctl" id="dNext" type="button" aria-label="Next song" disabled><svg viewBox="0 0 24 24"><path class="solid" d="M7 6.5v11a.7.7 0 0 0 1.1.6l6.9-5.5a.7.7 0 0 0 0-1.2L8.1 5.9A.7.7 0 0 0 7 6.5Z"/><path d="M17 6v12"/></svg></button>
           <span class="deck-song" id="dSong">Enter the room to play music</span>
+          <span class="deck-bpm" id="dBpm"></span>
           <label class="ctl" id="dAddLabel" for="dAdd" title="Add your own songs (MP3s)" aria-label="Add songs"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></label>
           <input type="file" id="dAdd" accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac" multiple hidden>
           <button class="ctl" id="dRemove" type="button" aria-label="Remove this song" title="Remove this song" hidden><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
@@ -234,9 +235,10 @@
     <div class="contact-copy">
       <h2>Let's build your room<span>or a whole world of them.</span></h2>
       <p class="section-lede">Tell us about your world. We'll reply with ideas and a quote.</p>
-      <p class="direct" id="contactDirect"></p>
     </div>
     <form class="form" id="form" novalidate>
+      <!-- a trap for spam bots: people never see or fill this; Formspree drops anything that has it filled -->
+      <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0;">
       <label>Name<input name="name" autocomplete="name" required></label>
       <label>Band, brand or artist<input name="project"></label>
       <label class="wide">Email<input name="email" type="email" autocomplete="email" required></label>

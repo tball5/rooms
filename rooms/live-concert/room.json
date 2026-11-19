@@ -7,7 +7,12 @@
       "label": "Exit"
     }
   },
-  "playlist": [],
+  "playlist": [
+    {
+      "src": "music/number-2-live.mp3",
+      "title": "Number 2 (Live)"
+    }
+  ],
   "posters": {},
   "guitarist": {
     "show": true,

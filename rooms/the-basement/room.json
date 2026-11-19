@@ -7,7 +7,12 @@
       "label": "Upstairs"
     }
   },
-  "playlist": [],
+  "playlist": [
+    {
+      "src": "music/pexile.mp3",
+      "title": "Pexile"
+    }
+  ],
   "posters": {},
   "colors": {
     "floor": "#4e4a4a",

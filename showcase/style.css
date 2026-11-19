@@ -368,3 +368,7 @@ main { counter-reset: section; }
   .tab { flex: 1 1 0; height: auto; min-height: 46px; padding: 6px 4px; font-size: 12.5px; line-height: 1.2; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .tab > span:not(.soon) { display: block; }
 }
+
+/* the song's tempo, next to its name under the window */
+.deck-bpm { flex: none; margin-right: 6px; font: 400 12px var(--mono); color: var(--dim); white-space: nowrap; }
+.deck-bpm:empty { display: none; }

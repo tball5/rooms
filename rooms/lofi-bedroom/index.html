@@ -344,6 +344,8 @@ header {
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse { 50% { transform: scale(0.4); opacity: 0.4; } }
+.player .bpm { flex: none; margin-left: 2px; font-size: 11px; letter-spacing: 0.06em; opacity: 0.6; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.player .bpm:empty { display: none; }
 .loader-label { position: absolute; top: calc(50% + 18px); left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cream); opacity: 0.55; }
 .loader.failed .loader-label { display: none; }
 .loader-note {
@@ -487,7 +489,7 @@ html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embe
       <button class="icon-btn" id="nextSong" aria-label="Next song (N)">
         <svg viewBox="0 0 24 24"><path class="solid" d="M7 6.5v11a.7.7 0 0 0 1.1.6l6.9-5.5a.7.7 0 0 0 0-1.2L8.1 5.9A.7.7 0 0 0 7 6.5Z"/><path d="M17 6v12"/></svg>
       </button>
-      <span class="now" id="nowPlaying">rain on the window</span>
+      <span class="now" id="nowPlaying">rain on the window</span><span class="bpm" id="songBpm" title="Tempo"></span>
       <label class="icon-btn add" for="songFile" title="Add songs, or drop MP3s anywhere in the room" aria-label="Add songs">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       </label>
@@ -1471,14 +1473,14 @@ const tempo = {
     if (!track || track.builtin || !track.src) return null;
     if (!this.found.has(track.src)) {
       this.found.set(track.src, null);
-      this.find(track.src).then(r => this.found.set(track.src, r)).catch(() => {});
+      this.find(track.src).then(r => this.found.set(track.src, r || false)).catch(() => this.found.set(track.src, false));
     }
-    return this.found.get(track.src);
+    return this.found.get(track.src) || null;
   },
   // beats counted from the start of the song at this playback time, or null until the tempo is known
   beats(track, time) {
     const f = this.of(track);
-    return f ? (time - f.offset) * f.bpm / 60 : null;
+    return f ? Math.max(0, (time - f.offset) * f.bpm / 60) : null;     // never below 0, even before the first beat
   },
   async find(src) {
     // works in short slices so the room keeps drawing smoothly while it listens
@@ -1544,7 +1546,7 @@ const tempo = {
       }
     }
     while (out.bpm < 78) out.bpm *= 2;                    // keep it in a range people move to
-    while (out.bpm > 180) out.bpm /= 2;
+    while (out.bpm > 145) out.bpm /= 2;                   // very fast reads (hi-hats on every half beat) count at half speed
     return out;
   },
 };
@@ -3996,6 +3998,18 @@ async function startRoom() {
   listen(volumeSlider, 'change', () => volumeSlider.blur());          // hand the keys back to walking
   for (const ev of ['pointerdown', 'keydown']) listen(volumeSlider, ev, e => e.stopPropagation());
   listen(page.songFile, 'change', () => { if (page.songFile.files.length) addSongs(page.songFile.files); page.songFile.value = ''; });
+  // ---- the player shows the song's tempo: the built-in song's own, or the one found in a song you add
+  const songBpm = document.getElementById('songBpm');
+  setInterval(() => {
+    const track = playlist.current;
+    let text = '';
+    if (track?.builtin) text = `${84} BPM`;
+    else if (track) {
+      const found = tempo.of(track);
+      text = found ? `${Math.round(found.bpm)} BPM` : tempo.found.get(track.src) === false ? '' : 'BPM …';
+    }
+    if (songBpm.textContent !== text) songBpm.textContent = text;
+  }, 400);
   // ---- touch screens: the ? under the view switch shows how to get around
   const helpBtn = document.getElementById('helpBtn'), helpPanel = document.getElementById('helpPanel');
   const showHelp = open => { helpPanel.hidden = !open; helpBtn.setAttribute('aria-expanded', String(open)); };
@@ -4023,6 +4037,7 @@ async function startRoom() {
       type: 'shaden-room',
       room: page.roomName?.textContent || document.title,
       song: page.nowPlaying.textContent,
+      bpm: document.getElementById('songBpm')?.textContent || '',
       playing: page.playSong.getAttribute('aria-pressed') === 'true',
       canRemove: !page.removeSong.hidden,
       volume: +(document.getElementById('musicVolume')?.value ?? 1),
