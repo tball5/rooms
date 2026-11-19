@@ -43,6 +43,7 @@ html, body {
   background: #000;
   overflow: hidden;
   overscroll-behavior: none;
+  touch-action: none;              /* the room handles every touch itself: no page zoom or scroll */
   -webkit-user-select: none;
   user-select: none;
 }
@@ -270,38 +271,33 @@ header {
 .crowd-noise[aria-pressed="true"] .cross { opacity: 0; }
 .pause[aria-pressed="true"] .bars { display: none; }
 
-/* Arrow pad (touch screens only): up and down walk, left and right turn; slide between them */
+/* Thumb joystick (touch screens only): up and down walk, left and right turn */
 .stick {
   position: absolute;
   left: calc(22px + env(safe-area-inset-left, 0px));
   bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-  width: 138px;
-  height: 138px;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(245, 239, 226, 0.32);
+  background: radial-gradient(circle, rgba(10, 10, 12, 0.18) 0%, rgba(10, 10, 12, 0.42) 100%);
   display: none;
   touch-action: none;
+  -webkit-touch-callout: none;
 }
-.stick-knob { display: none; }
-.pad-arrow {
+.stick-knob {
   position: absolute;
-  width: 46px;
-  height: 46px;
-  padding: 9px;
-  border-radius: 12px;
-  background: rgba(10, 10, 12, 0.42);
-  border: 1px solid rgba(245, 239, 226, 0.28);
-  fill: none;
-  stroke: rgba(245, 239, 226, 0.92);
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  transition: background .12s, border-color .12s;
+  left: 50%;
+  top: 50%;
+  width: 54px;
+  height: 54px;
+  margin: -27px 0 0 -27px;
+  border-radius: 50%;
+  background: rgba(245, 239, 226, 0.8);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+  transition: transform .18s ease-out;
 }
-.pad-arrow[data-dir="up"] { left: 46px; top: 0; }
-.pad-arrow[data-dir="down"] { left: 46px; bottom: 0; }
-.pad-arrow[data-dir="left"] { left: 0; top: 46px; }
-.pad-arrow[data-dir="right"] { right: 0; top: 46px; }
-.stick.up .pad-arrow[data-dir="up"], .stick.down .pad-arrow[data-dir="down"],
-.stick.left .pad-arrow[data-dir="left"], .stick.right .pad-arrow[data-dir="right"] { background: rgba(245, 239, 226, 0.3); border-color: rgba(245, 239, 226, 0.7); }
+.stick.active .stick-knob { transition: none; background: #f5efe2; }
 
 .hint-touch { display: none; }
 
@@ -331,9 +327,11 @@ header {
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse { 50% { transform: scale(0.4); opacity: 0.4; } }
+.loader-label { position: absolute; top: calc(50% + 18px); left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cream); opacity: 0.55; }
+.loader.failed .loader-label { display: none; }
 .loader-note {
   position: absolute;
-  top: calc(50% + 26px);
+  top: calc(50% + 44px);
   left: 0;
   right: 0;
   text-align: center;
@@ -390,21 +388,22 @@ html.touch .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.01em; }
 html.touch .modes { top: calc(8px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px)); padding: 3px; }
 html.touch .modes button { padding: 5px 10px; font-size: 12px; }
 html.touch .player {
-  position: fixed; margin: 0; max-width: none; width: auto;
-  left: calc(10px + env(safe-area-inset-left, 0px)); right: calc(10px + env(safe-area-inset-right, 0px)); bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-  padding: 6px 10px 6px 8px; border-radius: 16px;
+  margin-top: 16px; max-width: none; width: calc(100vw - 24px - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  padding: 4px 10px 4px 6px; border-radius: 14px;
 }
 html.touch .player .now { flex: 1; }
 html.touch .player .icon-btn { width: 34px; height: 34px; padding: 6px; }
-html.touch .stick { left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(74px + env(safe-area-inset-bottom, 0px)); }
-html.touch .corner { right: calc(12px + env(safe-area-inset-right, 0px)); bottom: calc(80px + env(safe-area-inset-bottom, 0px)); gap: 10px; }
-html.touch .corner .icon-btn { width: 32px; height: 32px; }
-html.touch #toast { top: auto; bottom: calc(226px + env(safe-area-inset-bottom, 0px)); }
-html.touch #pausedChip { top: calc(56px + env(safe-area-inset-top, 0px)); }
+html.touch .stick { left: calc(16px + env(safe-area-inset-left, 0px)); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); -webkit-touch-callout: none; }
+html.touch .corner { top: calc(102px + env(safe-area-inset-top, 0px)); bottom: auto; right: calc(50px + env(safe-area-inset-right, 0px)); gap: 10px; height: 34px; }
+html.touch .corner .sound { display: none !important; }   /* phones have volume buttons; ▶ pauses the music */
+html.touch .corner .icon-btn { width: 34px; height: 34px; padding: 7px; border-radius: 50%; pointer-events: auto;
+  background: rgba(18, 12, 34, 0.55); border: 1px solid rgba(245, 239, 226, 0.22); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+html.touch #toast { top: auto; bottom: calc(168px + env(safe-area-inset-bottom, 0px)); }
+html.touch #pausedChip { top: calc(150px + env(safe-area-inset-top, 0px)); }
 .help-btn, .help-panel { display: none; }
 html.touch .help-btn {
   display: grid; place-items: center; position: absolute; pointer-events: auto; cursor: pointer;
-  top: calc(52px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+  top: calc(102px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
   width: 34px; height: 34px; border-radius: 50%; font: 600 15px/1 inherit; color: inherit;
   background: rgba(18, 12, 34, 0.55); border: 1px solid rgba(245, 239, 226, 0.22);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
@@ -412,7 +411,7 @@ html.touch .help-btn {
 html.touch .help-btn[aria-expanded="true"] { background: rgba(245, 239, 226, 0.9); color: #120c22; }
 html.touch .help-panel:not([hidden]) {
   display: block; position: absolute; pointer-events: auto;
-  top: calc(94px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
+  top: calc(144px + env(safe-area-inset-top, 0px)); right: calc(8px + env(safe-area-inset-right, 0px));
   width: min(270px, calc(100vw - 24px)); padding: 12px 14px; border-radius: 14px;
   background: rgba(14, 10, 26, 0.82); border: 1px solid rgba(245, 239, 226, 0.18);
   backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -494,7 +493,7 @@ html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embe
   <div class="reticle" id="reticle"></div>
   <button class="prompt" id="prompt" hidden></button>
 
-  <div class="stick" id="stick" aria-label="Walk: up and down to walk, left and right to turn"><div class="stick-knob" id="stickKnob"></div><svg class="pad-arrow" data-dir="up" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(0 12 12)"/></svg><svg class="pad-arrow" data-dir="right" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(90 12 12)"/></svg><svg class="pad-arrow" data-dir="down" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(180 12 12)"/></svg><svg class="pad-arrow" data-dir="left" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14.5 12 9.5l5 5" transform="rotate(270 12 12)"/></svg></div>
+  <div class="stick" id="stick" aria-label="Walk: up and down walk, left and right turn"><div class="stick-knob" id="stickKnob"></div></div>
 
     <!-- touch screens: how to get around, behind the ? button under the view switch -->
     <button class="help-btn" id="helpBtn" type="button" aria-expanded="false" aria-controls="helpPanel" aria-label="How to get around">?</button>
@@ -503,7 +502,7 @@ html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embe
       <ul>
         <li>▶ on the player starts the set</li>
         <li>Drag one finger to look around</li>
-        <li>Arrows: up and down walk, left and right turn</li>
+        <li>Joystick: up and down walk, left and right turn</li>
         <li>Or spread two fingers to walk forward, pinch to back up</li>
         <li>Tap people and things to say hi or use them</li>
         <li>+ on the player adds your own songs</li>
@@ -550,6 +549,7 @@ html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embe
 
 <div class="loader" id="loader">
   <span class="loader-dot"></span>
+  <p class="loader-label">Entering…</p>
   <p class="loader-note" id="loaderNote" hidden></p>
   <div class="loader-error" id="loadError" role="alert" hidden>
     <p>This room couldn’t load.</p>
@@ -1212,14 +1212,16 @@ const IS_TOUCH = document.documentElement.classList.contains('touch');   // set 
 const REDUCED_MOTION = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const SETTINGS = {
-  maxPixelRatio: IS_PHONE ? 1.25 : 1.4,
+  // phones start sharp: iPhones 2x (or the screen's own if less), Android phones 1.5x (their graphics vary a lot);
+  // either steps down if frames slow
+  maxPixelRatio: IS_PHONE ? (/Android/i.test(navigator.userAgent) || (navigator.deviceMemory || 8) <= 4 ? 1.5 : 2) : 1.4,
   dustCount: IS_PHONE ? 250 : 500,
   layoutSeed: 147186,
   eyeHeight: 1.62,
   playerRadius: 0.32,          // how close you can get to walls and furniture
   walkSpeed: 1.9,              // metres per second
   runSpeed: 3.6,               // with Shift
-  touchSpeed: 5.6,             // top speed on a phone (arrow pad or a full pinch); sized to the room
+  touchSpeed: 6.6,             // top speed on a phone (joystick at the edge, or a full pinch); sized to the room
   reach: 3.2,                  // how far away you can use things
   fov: 68,                     // portrait phones get a wider view (80)
 };
@@ -3911,22 +3913,37 @@ async function startRoom() {
     post.composer.setSize(w, h);
     shared.uScale.value = (h * pixelRatio) / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
   }
-  listen(window, 'resize', resize);
+  let resizeQueued = false, lastSize = '';
+  listen(window, 'resize', () => {
+    if (resizeQueued) return;
+    resizeQueued = true;
+    requestAnimationFrame(() => { resizeQueued = false; const size = innerWidth + 'x' + innerHeight; if (size !== lastSize) { lastSize = size; resize(); } });
+  });
   resize();
+  lastSize = innerWidth + 'x' + innerHeight;
 
   // If frames run slow, render at a lower resolution (down to 0.6x) instead of pushing the graphics card
   // until the browser resets it.
   let slowTime = 0, fastTime = 0;
+  // Headroom: the screen refreshes faster than the 30 we draw at. If those refreshes keep arriving on time
+  // the graphics card has spare time, so draw sharper, up to the screen's own pixels (2x at most). If that
+  // ever slows things down, it steps back and stays there.
+  let lastTick = 0, quickTime = 0, sharpCeiling = Math.min(devicePixelRatio || 1, 2);
   function watchFrameTime(frameMs) {
     if (frameMs > 50) { slowTime += frameMs; fastTime = 0; } else { fastTime += frameMs; slowTime = Math.max(0, slowTime - frameMs * 0.5); }
-    if (slowTime > 1500 && pixelRatio > 0.6) {
-      pixelRatio = Math.max(0.6, +(pixelRatio - 0.2).toFixed(2));
+    if (slowTime > (IS_PHONE ? 900 : 1500) && pixelRatio > 0.6) {
+      pixelRatio = Math.max(0.6, +(pixelRatio - (IS_PHONE ? 0.3 : 0.2)).toFixed(2));
       renderer.setPixelRatio(pixelRatio); post.composer.setPixelRatio(pixelRatio); resize();
       slowTime = 0;
+      sharpCeiling = Math.min(sharpCeiling, pixelRatio + 0.2);
     } else if (fastTime > 8000 && pixelRatio < Math.min(devicePixelRatio || 1, SETTINGS.maxPixelRatio) - 0.01) {
       pixelRatio = Math.min(Math.min(devicePixelRatio || 1, SETTINGS.maxPixelRatio), +(pixelRatio + 0.1).toFixed(2));
       renderer.setPixelRatio(pixelRatio); post.composer.setPixelRatio(pixelRatio); resize();
       fastTime = 0;
+    } else if (quickTime > 5000 && pixelRatio < sharpCeiling - 0.01) {
+      pixelRatio = Math.min(sharpCeiling, +(pixelRatio + 0.15).toFixed(2));
+      renderer.setPixelRatio(pixelRatio); post.composer.setPixelRatio(pixelRatio); resize();
+      quickTime = 0;
     }
   }
 
@@ -4172,9 +4189,16 @@ async function startRoom() {
   //      switch and the tips, so the room keeps a clean screen. The room tells the page what its controls show, and the
   //      page passes taps back. In fullscreen the page asks for the room's own controls again.
   (() => {
-    let inShowcase = false;
-    try { inShowcase = window.parent !== window && new URLSearchParams(location.search).has('embed'); } catch { /* not in a frame */ }
-    if (!inShowcase) return;
+    let inShowcase = false, parentOrigin = '';
+    try {
+      inShowcase = window.parent !== window && new URLSearchParams(location.search).has('embed');
+      parentOrigin = location.ancestorOrigins?.[0] || (document.referrer ? new URL(document.referrer).origin : '');
+    } catch { /* not in a frame */ }
+    // only our own showcase gets the room's status and can press its buttons: the same site as the room, or a
+    // Shaden domain (add more with "showcaseOrigins" in room.json). Anyone else just gets the room as normal.
+    const OURS = [location.origin, 'https://shaden.technology', 'https://www.shaden.technology', ...(ROOM.showcaseOrigins || [])];
+    if (!inShowcase || !(OURS.includes(parentOrigin) || location.protocol === 'file:')) return;
+    const target = location.protocol === 'file:' ? '*' : parentOrigin;
     const root = document.documentElement;
     root.classList.add('embedded');
     const button = el => ({ id: el.id, cls: el.className, label: el.getAttribute('aria-label') || el.title || '', pressed: el.getAttribute('aria-pressed'), icon: el.querySelector('svg')?.outerHTML || '' });
@@ -4191,7 +4215,7 @@ async function startRoom() {
     let last = '';
     const send = () => {
       const now = state(), text = JSON.stringify(now);
-      if (text !== last) { last = text; window.parent.postMessage(now, '*'); }
+      if (text !== last) { last = text; window.parent.postMessage(now, target); }
     };
     new MutationObserver(send).observe(page.ui || document.getElementById('ui'), { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ['aria-pressed', 'aria-checked', 'hidden'] });
     const ids = new Set(['prevSong', 'playSong', 'nextSong', 'removeSong', ...state().extras.map(b => b.id)]);
@@ -4212,7 +4236,7 @@ async function startRoom() {
       send();
     };
     window.shadenRoom = { command };
-    listen(window, 'message', e => { if (e.source === window.parent && e.data?.type === 'shaden-cmd') command(e.data); });
+    listen(window, 'message', e => { if (e.source === window.parent && (target === '*' || e.origin === target) && e.data?.type === 'shaden-cmd') command(e.data); });
     send();
   })();
   listen(page.removeSong, 'click', async () => {
@@ -4332,20 +4356,17 @@ async function startRoom() {
   listen(window, 'pointerup', endDrag);
   listen(window, 'pointercancel', endDrag);
 
-  // ---- arrow pad (touch screens): up and down walk, left and right turn. Press anywhere past the middle;
-  //      slide your thumb between arrows, or press a corner to walk and turn together.
+  // ---- thumb joystick (touch screens): up and down walk, left and right turn. A little way from the middle
+  //      is slow, the edge is full speed, and any angle in between walks and turns at once.
   const moveStick = e => {
     const box = page.stick.getBoundingClientRect();
     const x = e.clientX - (box.left + box.width / 2), y = e.clientY - (box.top + box.height / 2);
-    const length = Math.hypot(x, y), dead = 12;
-    if (length < dead) { stick.x = stick.y = 0; }
-    else {
-      const angle = Math.atan2(y, x), eighth = Math.round(angle / (Math.PI / 4));     // 8 directions
-      stick.x = Math.round(Math.cos(eighth * Math.PI / 4));
-      stick.y = Math.round(Math.sin(eighth * Math.PI / 4));
-    }
-    page.stick.classList.toggle('up', stick.y < 0); page.stick.classList.toggle('down', stick.y > 0);
-    page.stick.classList.toggle('left', stick.x < 0); page.stick.classList.toggle('right', stick.x > 0);
+    const length = Math.hypot(x, y), dead = 6, full = 48;      // the knob's reach; at the edge it's full speed
+    const reach = Math.min(length, full);
+    page.stickKnob.style.transform = length ? `translate(${x / length * reach}px, ${y / length * reach}px)` : '';
+    const amount = length < dead ? 0 : Math.min(1, (length - dead) / (full - dead));
+    stick.x = length ? x / length * amount : 0;
+    stick.y = length ? y / length * amount : 0;
   };
   listen(page.stick, 'pointerdown', e => {
     e.preventDefault();
@@ -4359,7 +4380,8 @@ async function startRoom() {
     if (e.pointerId !== stick.id) return;
     stick.id = null;
     stick.x = stick.y = 0;
-    page.stick.classList.remove('active', 'up', 'down', 'left', 'right');
+    page.stick.classList.remove('active');
+    page.stickKnob.style.transform = '';
   };
   listen(page.stick, 'pointerup', releaseStick);
   listen(page.stick, 'pointercancel', releaseStick);
@@ -4394,6 +4416,7 @@ async function startRoom() {
   };
   listen(window, 'touchstart', onSceneTouches, { passive: true });
   listen(window, 'touchmove', onSceneTouches, { passive: true });
+  listen(document, 'touchmove', e => { if (!document.documentElement.classList.contains('embedded') && !e.target.closest('.help-panel')) e.preventDefault(); }, { passive: false });
   listen(window, 'touchend', onSceneTouches);
   listen(window, 'touchcancel', onSceneTouches);
   listen(window, 'gesturestart', e => e.preventDefault(), { passive: false });   // iPhone: a pinch walks, it doesn't zoom the page
@@ -4622,6 +4645,7 @@ async function startRoom() {
   let lastDrawAt = 0;
   function frame(now) {
     frameId = requestAnimationFrame(frame);
+    { const tick = now - lastTick; lastTick = now; quickTime = tick < 21 && !document.hidden ? quickTime + tick : 0; }
     if (now - lastFrameAt < FRAME_MS - 1.5) return;
     lastFrameAt = Math.max(lastFrameAt + FRAME_MS, now - FRAME_MS);
     if (lastDrawAt && !document.hidden) watchFrameTime(Math.min(now - lastDrawAt, 400));
@@ -4640,7 +4664,7 @@ async function startRoom() {
       look.pitchSpeed *= friction;
       if (Math.abs(look.yawSpeed) + Math.abs(look.pitchSpeed) < 0.01) look.yawSpeed = look.pitchSpeed = 0;
     }
-    look.yawTarget -= stick.x * 2.1 * dt;          // arrow pad: left and right turn you
+    look.yawTarget -= stick.x * 2.4 * dt;          // joystick: left and right turn you
     const follow = approach(look.drag ? 22 : 12, dt);
     look.yaw += (look.yawTarget - look.yaw) * follow;
     look.pitch += (look.pitchTarget - look.pitch) * follow;

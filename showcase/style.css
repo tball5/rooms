@@ -62,7 +62,7 @@ h1 span, h2 span { display: block; color: var(--dim); }
 /* ---------- viewer ---------- */
 .viewer-wrap { width: var(--wide); margin: 0 auto; }
 .viewer-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; position: relative; z-index: 1; }
-.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100%; margin-bottom: -1px; }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
 .tabs::-webkit-scrollbar { display: none; }
 .tab { flex: none; border: 1px solid transparent; border-bottom: 0; cursor: pointer; height: 40px; padding: 0 18px; border-radius: 9px 9px 0 0; background: transparent; font-size: 13.5px; font-weight: 500; color: var(--dim); transition: background .15s, color .15s; }
 .tab:hover { color: var(--text); }
@@ -71,7 +71,7 @@ h1 span, h2 span { display: block; color: var(--dim); }
 .tab[aria-selected="true"] { background: var(--frame); color: var(--text); border-color: var(--line-2); box-shadow: inset 0 2px 0 #fafafa; }
 .tab .soon { font: 400 10px var(--mono); text-transform: uppercase; letter-spacing: 0.05em; margin-left: 8px; color: var(--dim); }
 .hint { font: 400 12px var(--mono); color: var(--dim); }
-.viewer { position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; overflow: hidden; background: #050505; border: 1px solid var(--line-2); border-top: 6px solid var(--frame); box-shadow: 0 -1px 0 var(--line-2); }
+.viewer { position: relative; aspect-ratio: 16 / 9; width: 100%; border-radius: 10px; overflow: hidden; background: #050505; border: 1px solid var(--line-2); border-top: 0; }   /* the room runs right up to the open tab: no line between */
 .viewer.first-tab { border-top-left-radius: 0; }
 .viewer iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
 .viewer:fullscreen { border-radius: 0; border: 0; }
@@ -358,7 +358,7 @@ main { counter-reset: section; }
 /* ---------- phones and tablets: the cleanest showcase ---------- */
 @media (max-width: 720px), (hover: none) and (pointer: coarse) {
   /* the deck keeps the player, the view switch and the sound button; pause and rain/crowd stay in fullscreen */
-  .deck-extras .ctl:not(.sound) { display: none; }
+  .deck-extras { display: none; }   /* phones: ▶ pauses the music and the phone's own buttons set the volume */
   .deck-side { justify-content: space-between; width: 100%; }
   .deck .switch { margin: 0; }
 }

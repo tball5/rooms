@@ -111,6 +111,9 @@ function select(id, enterNow = false) {
   if (enterNow && !room.soon) enter();
 }
 
+// the room is drawn: take the poster and "Entering…" away
+function roomReady() { if (live) { loading.hidden = true; poster.hidden = true; } }
+
 function enter() {
   if (current.soon) return;
   unload();
@@ -122,7 +125,7 @@ function enter() {
   frame.src = roomUrl(current.path) + '?embed';
   frame.addEventListener('load', () => {
     if (!live) return;
-    setTimeout(() => { loading.hidden = true; poster.hidden = true; }, 400);
+    setTimeout(roomReady, 6000);                // in case the room never says so
     try { frame.contentWindow.focus(); } catch {}
   }, { once: true });
   viewer.append(frame);
@@ -137,7 +140,9 @@ const viewSwitch = $('viewSwitch'), extras = $('dExtras');
 function tell(message) {
   if (!frame || !live) return;
   try { if (frame.contentWindow.shadenRoom) return frame.contentWindow.shadenRoom.command(message); } catch { /* another site */ }
-  frame.contentWindow.postMessage({ type: 'shaden-cmd', ...message }, '*');
+  let origin = '*';
+  try { origin = location.protocol === 'file:' ? '*' : new URL(frame.src).origin; } catch {}
+  frame.contentWindow.postMessage({ type: 'shaden-cmd', ...message }, origin);   // only to the room we loaded
 }
 // desktop: the view switch stays inside the window, top right, as the room draws it; phones and tablets get it above
 const DESK = matchMedia('(min-width: 721px) and (hover: hover) and (pointer: fine)');
@@ -173,7 +178,7 @@ function deckIdle(room) {
 window.addEventListener('message', e => {
   const s = e.data;
   if (!frame || e.source !== frame.contentWindow || s?.type !== 'shaden-room') return;
-  if ($('deck').classList.contains('idle')) placeSwitch();     // first word from a newly loaded room
+  if ($('deck').classList.contains('idle')) { placeSwitch(); setTimeout(roomReady, 300); }     // first word from a newly loaded room
   $('deck').classList.remove('idle');
   renderSwitch(s.modes, true);
   $('dSong').textContent = s.song;
