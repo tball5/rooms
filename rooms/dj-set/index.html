@@ -327,6 +327,26 @@ header {
   animation: pulse 1.2s ease-in-out infinite;
 }
 @keyframes pulse { 50% { transform: scale(0.4); opacity: 0.4; } }
+/* the song list: under the player, scrolls when long (above the room's other buttons) */
+.player { position: relative; z-index: 8; }
+.song-list {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 5; pointer-events: auto;
+  width: max(100%, 260px); max-height: 196px; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  padding: 4px; border-radius: 12px; background: rgba(14, 10, 26, 0.88); border: 1px solid rgba(245, 239, 226, 0.16);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+}
+.song-list[hidden] { display: none; }
+.song-list ol { list-style: none; margin: 0; padding: 0; }
+.song-list button {
+  display: flex; gap: 10px; align-items: baseline; width: 100%; padding: 8px 10px; border: 0; border-radius: 8px;
+  background: transparent; color: inherit; font: inherit; font-size: 13px; text-align: left; cursor: pointer;
+}
+.song-list button:hover { background: rgba(245, 239, 226, 0.08); }
+.song-list button[aria-current="true"] { background: rgba(245, 239, 226, 0.14); }
+.song-list .n { flex: none; width: 16px; opacity: 0.45; font-size: 11px; font-variant-numeric: tabular-nums; }
+.song-list .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.song-list .a { opacity: 0.55; }
+#songListBtn[aria-expanded="true"] { background: rgba(245, 239, 226, 0.14); border-radius: 50%; }
 .player .bpm { flex: none; margin-left: 2px; font-size: 11px; letter-spacing: 0.06em; opacity: 0.6; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .player .bpm:empty { display: none; }
 .loader-label { position: absolute; top: calc(50% + 18px); left: 0; right: 0; text-align: center; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--cream); opacity: 0.55; }
@@ -473,6 +493,8 @@ html.embedded.embed-phone .prompt, html.embedded.embed-phone .reticle, html.embe
         <svg viewBox="0 0 24 24"><path class="solid" d="M7 6.5v11a.7.7 0 0 0 1.1.6l6.9-5.5a.7.7 0 0 0 0-1.2L8.1 5.9A.7.7 0 0 0 7 6.5Z"/><path d="M17 6v12"/></svg>
       </button>
       <span class="now" id="nowPlaying">low ceiling (live)</span><span class="bpm" id="songBpm" title="Tempo"></span>
+      <button class="icon-btn" id="songListBtn" aria-expanded="false" aria-controls="songList" aria-label="Song list" title="Song list"><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
+      <div class="song-list" id="songList" hidden><ol></ol></div>
       <label class="icon-btn add" for="songFile" title="Add songs, or drop MP3s anywhere in the room" aria-label="Add songs">
         <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
       </label>
@@ -1504,7 +1526,7 @@ const tempo = {
 
 const sound = {
   ctx: null, master: null, musicBus: null, musicVolume: null, analyser: null, bins: null,
-  volume: (() => { try { const v = parseFloat(localStorage.getItem('djSetVolume')); return v >= 0 && v <= 1 ? v : 0.8; } catch { return 0.8; } })(),
+  volume: (() => { try { const v = parseFloat(localStorage.getItem('djSetVolume')); return v >= 0 && v <= 1 ? v : 0.5; } catch { return 0.5; } })(),   // half volume to start
   setVolume(v) {
     this.volume = v;
     try { localStorage.setItem('djSetVolume', String(v)); } catch {}
@@ -4152,7 +4174,29 @@ async function startRoom() {
     page.playSong.setAttribute('aria-pressed', String(state.recordOn));
     page.playSong.setAttribute('aria-label', state.recordOn ? 'Pause music' : 'Play music');
     page.removeSong.hidden = !track.mine;
+    renderSongList();
   }
+  // ---- the song list: every song in the room (built in, shipped, and the ones you added); tap one to play it
+  const songList = document.getElementById('songList'), songListBtn = document.getElementById('songListBtn');
+  function renderSongList() {
+    const ol = songList.querySelector('ol');
+    ol.replaceChildren(...playlist.tracks.map((t, i) => {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button';
+      if (i === playlist.index) b.setAttribute('aria-current', 'true');
+      const n = Object.assign(document.createElement('span'), { className: 'n', textContent: String(i + 1) });
+      const title = Object.assign(document.createElement('span'), { className: 't', textContent: t.title });
+      if (t.artist && !t.builtin) title.append(' ', Object.assign(document.createElement('span'), { className: 'a', textContent: '— ' + t.artist }));
+      b.append(n, title);
+      b.addEventListener('click', () => { pickSong(i); showSongList(false); });
+      li.append(b);
+      return li;
+    }));
+  }
+  const showSongList = open => { songList.hidden = !open; songListBtn.setAttribute('aria-expanded', String(open)); };
+  listen(songListBtn, 'click', e => { e.stopPropagation(); renderSongList(); showSongList(songList.hidden); });
+  listen(window, 'pointerdown', e => { if (!songList.hidden && !e.target.closest('#songList, #songListBtn')) showSongList(false); });
+  function pickSong(i) { goToTrack(i, false); if (!state.recordOn) ACTIONS.record(); }
   function goToTrack(i, announce = true) {
     sound.selectTrack(i);
     updatePlayer();
@@ -4221,6 +4265,8 @@ async function startRoom() {
       room: page.roomName?.textContent || document.title,
       song: page.nowPlaying.textContent,
       bpm: document.getElementById('songBpm')?.textContent || '',
+      tracks: playlist.tracks.map(t => (t.artist && !t.builtin ? `${t.title} — ${t.artist}` : t.title)),
+      index: playlist.index,
       playing: page.playSong.getAttribute('aria-pressed') === 'true',
       canRemove: !page.removeSong.hidden,
       volume: +(document.getElementById('musicVolume')?.value ?? 1),
@@ -4240,6 +4286,7 @@ async function startRoom() {
       if (m.click && ids.has(m.click)) document.getElementById(m.click)?.click();
       if (m.mode) page.modes.querySelector(`[data-mode="${CSS.escape(m.mode)}"]`)?.click();
       if (m.files?.length) addSongs(m.files);
+      if (Number.isInteger(m.pick) && m.pick >= 0 && m.pick < playlist.tracks.length) pickSong(m.pick);
       if (typeof m.volume === 'number') {
         const v = document.getElementById('musicVolume');
         if (v) { v.value = m.volume; v.dispatchEvent(new Event('input', { bubbles: true })); }
@@ -4324,7 +4371,7 @@ async function startRoom() {
   });
   listen(document.documentElement, 'pointerleave', () => { mouse.inside = false; });
   listen(window, 'pointerdown', e => {
-    if (e.target.closest('a, button, .stick, .help-panel') || (e.pointerType === 'mouse' && e.button !== 0) || look.drag) return;
+    if (e.target.closest('a, button, .stick, .help-panel, .song-list') || (e.pointerType === 'mouse' && e.button !== 0) || look.drag) return;
     look.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, startX: e.clientX, startY: e.clientY, startTime: performance.now(), touch: e.pointerType === 'touch' };
     look.yawSpeed = look.pitchSpeed = 0;
     look.lastMove = performance.now();
@@ -4409,7 +4456,7 @@ async function startRoom() {
   const PINCH_RANGE = 30;        // pixels of spread (between the two fingers) for full speed
   const clampUnit = v => Math.max(-1, Math.min(1, v));
   const onSceneTouches = e => {
-    const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick, .help-panel')));
+    const touches = Array.from(e.touches).filter(t => !(t.target.closest && t.target.closest('a, button, .stick, .help-panel, .song-list')));
     if (touches.length >= 2) {
       const midX = (touches[0].clientX + touches[1].clientX) / 2, midY = (touches[0].clientY + touches[1].clientY) / 2;
       const gap = Math.hypot(touches[0].clientX - touches[1].clientX, touches[0].clientY - touches[1].clientY);
@@ -4431,7 +4478,7 @@ async function startRoom() {
   };
   listen(window, 'touchstart', onSceneTouches, { passive: true });
   listen(window, 'touchmove', onSceneTouches, { passive: true });
-  listen(document, 'touchmove', e => { if (!document.documentElement.classList.contains('embedded') && !e.target.closest('.help-panel')) e.preventDefault(); }, { passive: false });
+  listen(document, 'touchmove', e => { if (!document.documentElement.classList.contains('embedded') && !e.target.closest('.help-panel, .song-list')) e.preventDefault(); }, { passive: false });
   listen(window, 'touchend', onSceneTouches);
   listen(window, 'touchcancel', onSceneTouches);
   listen(window, 'gesturestart', e => e.preventDefault(), { passive: false });   // iPhone: a pinch walks, it doesn't zoom the page

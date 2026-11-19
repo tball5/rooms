@@ -77,15 +77,17 @@
           <button class="ctl" id="dNext" type="button" aria-label="Next song" disabled><svg viewBox="0 0 24 24"><path class="solid" d="M7 6.5v11a.7.7 0 0 0 1.1.6l6.9-5.5a.7.7 0 0 0 0-1.2L8.1 5.9A.7.7 0 0 0 7 6.5Z"/><path d="M17 6v12"/></svg></button>
           <span class="deck-song" id="dSong">Enter the room to play music</span>
           <span class="deck-bpm" id="dBpm"></span>
+          <button class="ctl" id="dList" type="button" aria-label="Song list" title="Song list" aria-expanded="false" aria-controls="dListPanel" disabled><svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></svg></button>
           <label class="ctl" id="dAddLabel" for="dAdd" title="Add your own songs (MP3s)" aria-label="Add songs"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></label>
           <input type="file" id="dAdd" accept="audio/*,.mp3,.m4a,.ogg,.wav,.flac" multiple hidden>
           <button class="ctl" id="dRemove" type="button" aria-label="Remove this song" title="Remove this song" hidden><svg viewBox="0 0 24 24"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg></button>
         </div>
         <div class="deck-side">
           <div class="deck-extras" id="dExtras"></div>
-          <input type="range" class="deck-volume" id="dVolume" min="0" max="1" step="0.01" value="0.8" aria-label="Music volume" title="Music volume" disabled>
+          <input type="range" class="deck-volume" id="dVolume" min="0" max="1" step="0.01" value="0.5" aria-label="Music volume" title="Music volume" disabled>
         </div>
       </div>
+      <div class="deck-list" id="dListPanel" hidden><ol></ol></div>
       <div class="viewer-bar">
         <p class="hint" id="hint"></p>
         <span class="viewer-links">

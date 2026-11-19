@@ -170,6 +170,7 @@ function deckIdle(room) {
   renderSwitch((room.views || []).map((label, i) => ({ mode: ['lofi', 'mix', 'code'][i], label, on: i === 0 })), false);
   $('dSong').textContent = room.soon ? 'Coming soon' : 'Enter the room to play music';
   $('dBpm').textContent = '';
+  $('dList').disabled = true; showList(false); $('dListPanel').dataset.key = '';
   $('dPlay').setAttribute('aria-pressed', 'false');
   for (const id of ['dPrev', 'dNext']) $(id).disabled = true;
   $('dVolume').disabled = true; $('dRemove').hidden = true;
@@ -184,6 +185,21 @@ window.addEventListener('message', e => {
   renderSwitch(s.modes, true);
   $('dSong').textContent = s.song;
   $('dBpm').textContent = s.bpm || '';
+  $('dList').disabled = false;
+  // the song list: rebuilt when the songs or the playing one change
+  const listKey = JSON.stringify([s.tracks, s.index]);
+  if ($('dListPanel').dataset.key !== listKey) {
+    $('dListPanel').dataset.key = listKey;
+    $('dListPanel').querySelector('ol').replaceChildren(...(s.tracks || []).map((title, i) => {
+      const li = document.createElement('li'), b = document.createElement('button');
+      b.type = 'button';
+      if (i === s.index) b.setAttribute('aria-current', 'true');
+      b.append(Object.assign(document.createElement('span'), { className: 'n', textContent: String(i + 1) }), Object.assign(document.createElement('span'), { className: 't', textContent: title }));
+      b.addEventListener('click', () => { tell({ pick: i }); backToRoom(); });
+      li.append(b);
+      return li;
+    }));
+  }
   $('dPlay').setAttribute('aria-pressed', String(s.playing));
   $('dPlay').setAttribute('aria-label', s.playing ? 'Pause music' : 'Play music');
   for (const id of ['dPrev', 'dNext']) $(id).disabled = false;
@@ -202,6 +218,8 @@ window.addEventListener('message', e => {
     }));
   }
 });
+function showList(open) { $('dListPanel').hidden = !open; $('dList').setAttribute('aria-expanded', String(open)); }
+$('dList').addEventListener('click', () => showList($('dListPanel').hidden));
 $('dPlay').addEventListener('click', () => { if (!live) return enter(); tell({ click: 'playSong' }); backToRoom(); });
 $('dPrev').addEventListener('click', () => { tell({ click: 'prevSong' }); backToRoom(); });
 $('dNext').addEventListener('click', () => { tell({ click: 'nextSong' }); backToRoom(); });
