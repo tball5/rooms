@@ -16,7 +16,7 @@ const ROOMS = [
     id: 'lofi-bedroom', name: 'Lofi Bedroom', path: 'rooms/lofi-bedroom/', preview: 'showcase/previews/lofi-bedroom.jpg', card: 'showcase/previews/lofi-bedroom-card.webp',
     kicker: 'For lofi artists, producers and streamers',
     line: 'A rainy-night bedroom with a real 3D city outside the window. Her computer plays your tracks.',
-    features: ['Your songs on her computer', 'Posters, neon sign and colours', 'Her and the cat, restyled'],
+    features: ['Your songs on her computer', 'Posters, neon sign and colors', 'Her and the cat, restyled'],
     tip: 'Tap the computer, the cat and the window',
     views: ['Lofi', 'Mix', 'Code'], keys: 'click the computer, the cat and the window',
   },
@@ -100,7 +100,7 @@ function select(id, enterNow = false) {
   $('notesLine').textContent = room.line;
   $('notesTips').replaceChildren(...[room.tip, 'Drag one finger to look around', 'Walk with the arrows (left and right turn you), or spread two fingers apart to go forward',
     'Tap + under the window to add your own songs', 'Switch views under the window'].filter(Boolean).map(text => Object.assign(document.createElement('li'), { textContent: text })));
-  $('hint').textContent = `WASD to walk · drag to look · ${room.keys} · drop in your own MP3s`;
+  $('hint').textContent = `WASD to walk · drag to look · ${room.keys}`;   // the MP3 line sits under it, for every room
   deckIdle(room);
   $('enter').hidden = !!room.soon;
   $('soonCta').hidden = !room.soon;
